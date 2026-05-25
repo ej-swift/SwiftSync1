@@ -3,45 +3,292 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SwiftSync — Stream control from your phone</title>
-  <meta name="description" content="SwiftSync is a desktop app for streamers to control OBS and multi-platform live chat from a mobile device.">
+  <title>SwiftSync — OBS &amp; multi-platform chat control from your phone</title>
+  <meta name="description" content="SwiftSync is a Windows desktop app for streamers. Control OBS scenes, audio, and Twitch, Kick, YouTube, and TikTok chat from your phone while you stream.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="wrap">
-    <header>
-      <p class="badge">SwiftSync</p>
-      <h1>Control your stream from anywhere</h1>
-      <p class="lead">
-        SwiftSync is a Windows desktop app that pairs with your phone so you can switch OBS scenes,
-        adjust audio, and read or send multi-platform chat while you stream.
-      </p>
-    </header>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="./">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>SwiftSync</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a class="nav-muted" href="#features">Features</a>
+        <a class="nav-muted" href="#how-it-works">How it works</a>
+        <a class="nav-muted" href="#download">Download</a>
+        <a class="nav-muted" href="#faq">FAQ</a>
+        <span class="legal-nav">
+          <a href="terms.html/">Terms</a>
+          <a href="privacy.html/">Privacy</a>
+        </span>
+        <a class="btn btn-primary" href="#download">Get SwiftSync</a>
+      </nav>
+    </div>
+  </header>
 
-    <section>
-      <h2>Features</h2>
-      <ul>
-        <li>OBS scene and source control</li>
-        <li>Global audio mixer controls</li>
-        <li>Multi-platform chat (Twitch, Kick, YouTube, TikTok)</li>
-        <li>Secure pairing between your PC and mobile browser</li>
-      </ul>
-    </section>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="badge">Streaming utility for Windows</p>
+        <h1>Control OBS and live chat from your phone</h1>
+        <p class="lead">
+          SwiftSync runs on your streaming PC and pairs with your mobile browser. Switch scenes,
+          adjust audio, and read or send chat across Twitch, Kick, YouTube, and TikTok without
+          alt-tabbing out of your game or broadcast software.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#download">Download for Windows</a>
+          <a class="btn btn-secondary" href="#how-it-works">See how pairing works</a>
+        </div>
+        <div class="hero-meta">
+          <span><strong>Desktop app</strong> — runs locally on your PC</span>
+          <span><strong>Mobile control</strong> — works on Wi‑Fi or cellular</span>
+          <span><strong>Multi-platform chat</strong> — one inbox, one send box</span>
+        </div>
+        <div class="legal-strip" aria-label="Legal links">
+          <strong>Legal:</strong>
+          <a href="terms.html/">Terms of Service</a>
+          <a href="privacy.html/">Privacy Policy</a>
+        </div>
+      </div>
 
-    <section>
-      <h2>TikTok Login Kit</h2>
-      <p>
-        SwiftSync uses TikTok Login Kit so streamers can sign in on their own PC and auto-fill their
-        TikTok username. We request <code>user.info.basic</code> only. Tokens are stored locally on
-        the user's computer.
-      </p>
-    </section>
+      <div class="preview-stack" aria-hidden="true">
+        <div class="mock-desktop">
+          <div class="mock-titlebar">
+            <span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span>
+          </div>
+          <div class="mock-body">
+            <div class="mock-sidebar">
+              <div class="mock-line accent"></div>
+              <div class="mock-line short"></div>
+              <div class="mock-line"></div>
+              <div class="mock-line tiny"></div>
+            </div>
+            <div class="mock-panel">
+              <div class="mock-line accent"></div>
+              <div class="mock-line"></div>
+              <div class="mock-line short"></div>
+              <div class="mock-chat">
+                <span class="mock-chip chip-twitch">Twitch</span>
+                <span class="mock-chip chip-kick">Kick</span>
+                <span class="mock-chip chip-youtube">YouTube</span>
+                <span class="mock-chip chip-tiktok">TikTok</span>
+                <div class="mock-line"></div>
+                <div class="mock-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mock-phone">
+          <div class="mock-phone-notch"></div>
+          <div class="mock-line accent"></div>
+          <div class="mock-line"></div>
+          <div class="mock-line short"></div>
+          <div class="mock-line tiny"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <footer>
-      <a href="terms.html/">Terms of Service</a>
-      <span aria-hidden="true">·</span>
-      <a href="privacy.html/">Privacy Policy</a>
-    </footer>
-  </main>
+  <section class="section section-alt" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Built for solo streamers and small setups</h2>
+        <p>
+          SwiftSync is a production desktop utility — not a login page. It connects to OBS Studio
+          on your PC and gives you a remote control surface on your phone.
+        </p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">🎬</div>
+          <h3>OBS scene control</h3>
+          <p>Switch scenes, trigger linked layouts, and manage sources from your phone while you stay in-game.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">🎚️</div>
+          <h3>Audio mixer</h3>
+          <p>Mute, unmute, and adjust global audio inputs without opening OBS on your desktop.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">💬</div>
+          <h3>Unified chat</h3>
+          <p>Read incoming messages from Twitch, Kick, YouTube, and TikTok in one timeline.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">📤</div>
+          <h3>Send to all platforms</h3>
+          <p>Reply once and broadcast the same message to every connected chat platform.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">🔗</div>
+          <h3>Secure pairing</h3>
+          <p>Pair your phone with a one-time code and optional cloud relay for use away from home Wi‑Fi.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true">🔒</div>
+          <h3>Local-first credentials</h3>
+          <p>OAuth tokens and chat settings are stored on your PC unless you opt into cloud relay.</p>
+        </article>
+      </div>
+      <div class="platform-row" aria-label="Supported platforms">
+        <span class="platform-pill">OBS Studio</span>
+        <span class="platform-pill">Twitch</span>
+        <span class="platform-pill">Kick</span>
+        <span class="platform-pill">YouTube Live</span>
+        <span class="platform-pill">TikTok LIVE</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>How SwiftSync works</h2>
+        <p>Three steps from install to controlling your stream from your phone.</p>
+      </div>
+      <div class="steps">
+        <article class="step-card">
+          <span class="step-num">1</span>
+          <h3>Install on your streaming PC</h3>
+          <p>Download SwiftSync for Windows, connect it to OBS via WebSocket, and sign in to the chat platforms you use.</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">2</span>
+          <h3>Pair your phone</h3>
+          <p>Open the mobile control page on your phone and scan the QR code or enter the pairing code shown in SwiftSync.</p>
+        </article>
+        <article class="step-card">
+          <span class="step-num">3</span>
+          <h3>Control while live</h3>
+          <p>Change scenes, adjust audio, read chat, and send messages from your phone while SwiftSync runs on your PC.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="tiktok">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>TikTok Login Kit integration</h2>
+        <p>SwiftSync uses TikTok Login Kit on the desktop app so streamers can connect their TikTok account securely.</p>
+      </div>
+      <div class="info-panel">
+        <p><strong>What we request:</strong> TikTok scope <code>user.info.basic</code> only.</p>
+        <ul>
+          <li>Used to read your TikTok username and display name after you sign in on your PC.</li>
+          <li>Auto-fills your TikTok account in SwiftSync chat settings.</li>
+          <li>Tokens are stored locally on your computer — SwiftSync does not operate a central user database.</li>
+          <li>Live chat while you are broadcasting uses your TikTok username; you must be LIVE to send messages.</li>
+        </ul>
+        <p class="muted" style="margin-top: 1rem;">
+          SwiftSync is an independent streaming utility and is not affiliated with or endorsed by TikTok.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="download">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Download SwiftSync</h2>
+        <p>SwiftSync is distributed as a Windows desktop application. Install it on the same PC that runs OBS.</p>
+      </div>
+      <div class="download-grid">
+        <div class="info-panel">
+          <p>
+            <strong>Distribution:</strong> SwiftSync is a Windows desktop application installed on your streaming PC.
+            Source code, setup instructions, and release builds are published on GitHub.
+          </p>
+          <div class="hero-actions" style="margin-top: 1rem;">
+            <a class="btn btn-primary" href="https://github.com/ej-swift/SwiftSync1" rel="noopener">View on GitHub</a>
+            <a class="btn btn-secondary" href="#how-it-works">Setup overview</a>
+          </div>
+        </div>
+        <div class="info-panel">
+          <h3>System requirements</h3>
+          <ul class="req-list">
+            <li>Windows 10 or later (64-bit)</li>
+            <li>OBS Studio with WebSocket enabled</li>
+            <li>Internet for chat platform sign-in</li>
+            <li>Phone or tablet with a modern browser</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item" open>
+          <summary>Is SwiftSync a web app or a desktop app?</summary>
+          <p>
+            SwiftSync is primarily a Windows desktop application. This website describes the product and hosts
+            our Terms of Service and Privacy Policy. The mobile experience runs in your phone browser after
+            pairing with your PC.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary>Does SwiftSync store my TikTok password?</summary>
+          <p>
+            No. TikTok sign-in uses Login Kit OAuth in the desktop app. SwiftSync receives an access token
+            for the scopes you approve and stores it locally on your PC.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary>Can I use SwiftSync away from my home network?</summary>
+          <p>
+            Yes. SwiftSync supports an optional cloud relay so your phone can connect over cellular data
+            while your PC stays online at home or in your studio.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary>How do I get support?</summary>
+          <p>
+            Open an issue on
+            <a href="https://github.com/ej-swift/SwiftSync1/issues" rel="noopener">GitHub Issues</a>
+            or contact the developer through the TikTok Developer Portal support channel used for app review.
+          </p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-inner footer-grid">
+      <div>
+        <a class="brand" href="./">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <span>SwiftSync</span>
+        </a>
+        <p class="muted" style="margin-top: 0.75rem;">
+          Stream control utility for OBS and multi-platform live chat. © 2026 SwiftSync.
+        </p>
+      </div>
+      <div>
+        <strong>Product</strong>
+        <div class="footer-links">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#download">Download</a>
+          <a href="#tiktok">TikTok integration</a>
+        </div>
+      </div>
+      <div>
+        <strong>Legal</strong>
+        <div class="footer-links">
+          <a href="terms.html/">Terms of Service</a>
+          <a href="privacy.html/">Privacy Policy</a>
+          <a href="https://github.com/ej-swift/SwiftSync1" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
 </body>
 </html>
