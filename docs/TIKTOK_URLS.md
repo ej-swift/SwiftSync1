@@ -14,7 +14,7 @@ Repo: **https://github.com/ej-swift/SwiftSync1** — GitHub Pages serves the **`
 
 Use the **same** icon file everywhere TikTok checks:
 
-1. **TikTok Developer Portal → Basic Info → App icon** — upload `docs/icon-256.png` from this repo (same as `favicon.ico` / header logo).
+1. **TikTok Developer Portal → Basic Info → App icon** — upload **`docs/icon-1024.png`** (1024×1024, required). Same artwork as `favicon.ico` / header logo.
 2. **GitHub Pages** — Home, Terms, and Privacy show the logo in the header and at the top of each legal page; the browser tab uses `favicon.ico`.
 3. Do **not** use the green letter “S” placeholder.
 
