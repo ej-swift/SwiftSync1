@@ -1500,6 +1500,16 @@ body.mobile-shell .chat-messages {
   margin-right: 6px;
 }
 
+.chat-msg-join {
+  opacity: 0.92;
+  font-style: italic;
+}
+
+.chat-msg-join-text,
+.chat-msg.chat-msg-join .chat-msg-text {
+  color: #9eb8a8;
+}
+
 .chat-msg-text {
   color: var(--text-primary);
 }

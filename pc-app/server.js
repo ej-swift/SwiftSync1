@@ -531,6 +531,9 @@ function createHttpHandler(stores, relayBridge) {
       readJsonBody(req)
         .then((payload) => {
           chatStore.set(payload);
+          if (typeof relayBridge.broadcastChatToDock === 'function') {
+            relayBridge.broadcastChatToDock(payload);
+          }
           jsonResponse(res, 200, { ok: true });
         })
         .catch((e) => jsonResponse(res, 400, { ok: false, message: e.message }));
@@ -692,6 +695,24 @@ function attachRelayHandlers(wss, stores, port, relayBridge) {
       })
     );
   }
+
+  function broadcastChatToDock(payload) {
+    if (!payload || typeof payload !== 'object') return;
+    const msg = JSON.stringify({
+      type: 'chat',
+      from: 'pc',
+      messages: payload.messages || chatStore.get().messages || [],
+      channel: payload.channel != null ? payload.channel : chatStore.get().channel,
+      connected: payload.connected != null ? !!payload.connected : chatStore.get().connected,
+      canSend: payload.canSend != null ? !!payload.canSend : chatStore.get().canSend,
+      sendPlatforms: payload.sendPlatforms || chatStore.get().sendPlatforms,
+      statuses: payload.statuses || chatStore.get().statuses,
+      platforms: payload.platforms || chatStore.get().platforms
+    });
+    dockClients.forEach((c) => c.readyState === WebSocket.OPEN && c.send(msg));
+  }
+
+  relayBridge.broadcastChatToDock = broadcastChatToDock;
 
   function notifyPcPairing(ws) {
     if (ws.readyState !== WebSocket.OPEN) return;

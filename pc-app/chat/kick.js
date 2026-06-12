@@ -11,8 +11,17 @@ const USER_AGENT =
 
 const KICK_CHAT_EVENTS = new Set([
   'App\\Events\\ChatMessageEvent',
+  'App\\Events\\ChatMessageSentEvent',
   'ChatMessageEvent',
+  'ChatMessageSentEvent',
   'ChatMessage'
+]);
+
+const KICK_JOIN_EVENTS = new Set([
+  'App\\Events\\UserJoinedEvent',
+  'App\\Events\\UserJoinedChatEvent',
+  'UserJoinedEvent',
+  'UserJoinedChatEvent'
 ]);
 
 function normalizeSlug(channel) {
@@ -279,26 +288,65 @@ function createKickConnector() {
   }
 
   function emitChatMessage(payload) {
-    const text = payload.content || payload.message || '';
+    const data =
+      payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+        ? payload.data
+        : payload;
+    const msgBlock =
+      data?.message && typeof data.message === 'object' ? data.message : data;
+    const sender = data?.user || msgBlock?.sender || data?.sender || payload?.sender || {};
+    const text =
+      (typeof msgBlock?.message === 'string' && msgBlock.message) ||
+      (typeof msgBlock?.content === 'string' && msgBlock.content) ||
+      (typeof data?.message === 'string' && data.message) ||
+      (typeof data?.content === 'string' && data.content) ||
+      (typeof payload?.content === 'string' && payload.content) ||
+      (typeof payload?.message === 'string' && payload.message) ||
+      '';
     if (!text) return;
     markConnected();
 
-    const sender = payload.sender || {};
     const author =
       sender.username ||
       sender.slug ||
-      payload.username ||
-      payload.sender_username ||
+      sender.name ||
+      msgBlock?.username ||
+      payload?.username ||
+      payload?.sender_username ||
       'unknown';
-    const ts = payload.created_at ? Date.parse(payload.created_at) : Date.now();
+    const ts = msgBlock?.created_at
+      ? Number(msgBlock.created_at) * (String(msgBlock.created_at).length <= 10 ? 1000 : 1)
+      : payload?.created_at
+        ? Date.parse(payload.created_at)
+        : Date.now();
 
     emitter.emit('message', {
-      id: String(payload.id || `${ts}-${author}`),
+      id: String(msgBlock?.id || payload?.id || `${ts}-${author}`),
       platform: 'kick',
       author,
-      color: sender.identity?.color || payload.identity?.color || null,
+      color: sender.identity?.color || payload?.identity?.color || null,
       text,
       timestamp: Number.isFinite(ts) ? ts : Date.now()
+    });
+  }
+
+  function emitJoinMessage(payload) {
+    const data =
+      payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data)
+        ? payload.data
+        : payload;
+    const user = data?.user || data?.sender || payload?.user || payload?.sender || {};
+    const author =
+      user.username || user.slug || user.name || data?.username || payload?.username || 'Someone';
+    const ts = Date.now();
+    markConnected();
+    emitter.emit('message', {
+      id: `join-${ts}-${author}`,
+      platform: 'kick',
+      author,
+      kind: 'join',
+      text: `${author} joined`,
+      timestamp: ts
     });
   }
 
@@ -329,6 +377,17 @@ function createKickConnector() {
       event === 'pusher:subscription_succeeded'
     ) {
       markConnected();
+      return;
+    }
+
+    if (KICK_JOIN_EVENTS.has(event)) {
+      let payload;
+      try {
+        payload = typeof envelope.data === 'string' ? JSON.parse(envelope.data) : envelope.data;
+      } catch {
+        return;
+      }
+      emitJoinMessage(payload);
       return;
     }
 

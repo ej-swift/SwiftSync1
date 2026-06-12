@@ -3,6 +3,7 @@ const { createTwitchConnector } = require('./twitch');
 const { createKickConnector } = require('./kick');
 const { createYoutubeConnector } = require('./youtube');
 const { createTiktokConnector } = require('./tiktok');
+const { normalizeChatMessage } = require('./chat-message');
 
 const MAX_MESSAGES = 300;
 
@@ -53,8 +54,10 @@ function createChatHub() {
     emitter.emit('statuses', getStatuses());
   }
 
-  function insertMessage(msg) {
+  function insertMessage(raw) {
+    const msg = normalizeChatMessage(raw);
     if (!msg || !msg.platform || !msg.id) return;
+    if (!msg.text && msg.kind !== 'join') return;
     const key = messageKey(msg);
     if (seen.has(key)) return;
     seen.add(key);

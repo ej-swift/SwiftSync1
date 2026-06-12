@@ -73,6 +73,7 @@ function createTwitchConnector() {
   let reconnectTimer = null;
   let intentionalClose = false;
   let authFailed = false;
+  let capReady = false;
   let socketReadyResolve = null;
   let socketReadyReject = null;
   let statusMeta = { connecting: false, reconnecting: false, error: null };
@@ -163,6 +164,19 @@ function createTwitchConnector() {
     return t.startsWith('oauth:') ? t : `oauth:${t}`;
   }
 
+  function pushJoin(author) {
+    const name = String(author || '').trim();
+    if (!name || /^justinfan/i.test(name)) return;
+    pushMessage({
+      id: `join-${Date.now()}-${name}`,
+      platform: 'twitch',
+      author: name,
+      kind: 'join',
+      text: `${name} joined`,
+      timestamp: Date.now()
+    });
+  }
+
   function handlePrivmsg(parsed) {
     const target = parsed.params[0] || '';
     if (!target.startsWith('#')) return;
@@ -236,15 +250,50 @@ function createTwitchConnector() {
       settleSocketWait();
     }
 
+    if (parsed.command === 'CAP') {
+      const sub = parsed.params[1] || '';
+      if (sub === 'ACK' || sub === 'NAK') authenticateAndJoin();
+      return;
+    }
+
     if (parsed.command === '001' || parsed.command === '376') {
       markOnline();
       return;
     }
 
     if (parsed.command === 'JOIN') {
-      const joined = (parsed.params[0] || '').replace(/^#/, '').toLowerCase();
-      if (joined === channel) {
+      const tags = parsed.tags || {};
+      const joinedChannel = (parsed.params[0] || '').replace(/^#/, '').toLowerCase();
+      const nick = (tags['display-name'] || parsed.nick || '').trim();
+      if (joinedChannel === channel) {
         markOnline();
+        const self = String(username || '').toLowerCase();
+        if (
+          nick &&
+          !/^justinfan/i.test(nick) &&
+          (!self || nick.toLowerCase() !== self)
+        ) {
+          pushJoin(nick);
+        }
+      }
+      return;
+    }
+
+    if (parsed.command === 'USERNOTICE') {
+      const tags = parsed.tags || {};
+      const msgId = tags['msg-id'] || '';
+      const author = tags['display-name'] || parsed.nick || 'Someone';
+      const ts = tags['tmi-sent-ts'] ? Number(tags['tmi-sent-ts']) : Date.now();
+      if (msgId === 'raid') {
+        const viewers = tags['msg-param-viewerCount'] || '';
+        pushMessage({
+          id: tags.id || `raid-${ts}-${author}`,
+          platform: 'twitch',
+          author,
+          kind: 'join',
+          text: viewers ? `${author} raided with ${viewers} viewers` : `${author} raided`,
+          timestamp: Number.isFinite(ts) ? ts : Date.now()
+        });
       }
       return;
     }
@@ -279,6 +328,20 @@ function createTwitchConnector() {
     }
   }
 
+  function authenticateAndJoin() {
+    if (capReady) return;
+    capReady = true;
+    if (oauthToken && username) {
+      sendRaw(`PASS ${normalizeToken(oauthToken)}`);
+      sendRaw(`NICK ${username}`);
+    } else {
+      sendRaw('PASS SCHMOOPLE');
+      sendRaw(`NICK ${anonNick()}`);
+    }
+    sendRaw(`JOIN #${channel}`);
+    sendRaw('CAP END');
+  }
+
   function openSocket() {
     intentionalClose = false;
     if (!channel) return;
@@ -289,18 +352,14 @@ function createTwitchConnector() {
       /* ignore */
     }
 
+    capReady = false;
     ws = new WebSocket(TWITCH_IRC_URL);
 
     ws.on('open', () => {
-      sendRaw('CAP REQ :twitch.tv/tags twitch.tv/commands');
-      if (oauthToken && username) {
-        sendRaw(`PASS ${normalizeToken(oauthToken)}`);
-        sendRaw(`NICK ${username}`);
-      } else {
-        sendRaw('PASS SCHMOOPLE');
-        sendRaw(`NICK ${anonNick()}`);
-      }
-      sendRaw(`JOIN #${channel}`);
+      sendRaw('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership');
+      setTimeout(() => {
+        if (!capReady && ws?.readyState === WebSocket.OPEN) authenticateAndJoin();
+      }, 4000);
       connected = false;
       emitStatus({ connecting: true });
     });

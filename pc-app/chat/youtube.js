@@ -463,10 +463,25 @@ function createYoutubeConnector() {
       for (const item of data.items || []) {
         const snippet = item.snippet || {};
         const authorDetails = item.authorDetails || {};
+        const ts = snippet.publishedAt ? Date.parse(snippet.publishedAt) : Date.now();
+        const eventType = snippet.type || '';
+
+        if (eventType === 'newMemberEvent') {
+          const author = authorDetails.displayName || 'Someone';
+          emitter.emit('message', {
+            id: item.id || `join-${ts}-${author}`,
+            platform: 'youtube',
+            author,
+            kind: 'join',
+            text: `${author} joined`,
+            timestamp: Number.isFinite(ts) ? ts : Date.now()
+          });
+          continue;
+        }
+
         const text = snippet.displayMessage || '';
         if (!text) continue;
 
-        const ts = snippet.publishedAt ? Date.parse(snippet.publishedAt) : Date.now();
         emitter.emit('message', {
           id: item.id || `${ts}-${authorDetails.displayName}`,
           platform: 'youtube',

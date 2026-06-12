@@ -53,6 +53,30 @@
     }
   }
 
+  function formatChatAuthor(msg) {
+    if (!msg || typeof msg !== 'object') return 'unknown';
+    const user = msg.user;
+    if (user && typeof user === 'object') {
+      const nested =
+        user.username || user.displayName || user.display_name || user.name || user.slug;
+      if (nested && String(nested).trim()) return String(nested).trim();
+    }
+    const name = msg.author || msg.displayName || msg.username || msg.user;
+    const s = String(name || '').trim();
+    return s || 'unknown';
+  }
+
+  function isJoinChatMessage(msg) {
+    if (!msg || typeof msg !== 'object') return false;
+    if (msg.kind === 'join') return true;
+    const t = String(msg.text || '');
+    return (
+      /\bjoined (the )?(chat|channel|stream|live)\b/i.test(t) ||
+      /\bhas joined\b/i.test(t) ||
+      /\bwelcome\b.*\bto the stream\b/i.test(t)
+    );
+  }
+
   function detectInAppBrowser() {
     if (typeof navigator === 'undefined') return { inApp: false, label: '' };
     const ua = navigator.userAgent || '';
@@ -228,6 +252,8 @@
     getLogText,
     copyDiagnostics,
     detectInAppBrowser,
+    formatChatAuthor,
+    isJoinChatMessage,
     renderSetupChecklist,
     renderChatOnlySetupChecklist,
     checkForUpdates,

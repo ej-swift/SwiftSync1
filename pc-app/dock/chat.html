@@ -220,6 +220,10 @@
 
     .chat-msg.mod .user { color: #00ff85; }
 
+    .chat-msg-join { opacity: 0.92; font-style: italic; }
+
+    .chat-msg-join .join-text { color: #b8c4d4; }
+
   </style>
 
 </head>
@@ -246,7 +250,7 @@
 
   </header>
 
-  <div id="dock-messages" class="dock-chat-messages chat-messages" aria-live="polite"></div>
+  <div id="dock-messages" class="dock-chat-messages" aria-live="polite"></div>
 
   <div class="dock-chat-compose">
 
@@ -258,7 +262,8 @@
 
   </div>
 
-  <script src="chat.js"></script>
+  <script src="/shared/swiftsync-support.js?v=5"></script>
+  <script src="chat.js?v=6"></script>
 
 </body>
 

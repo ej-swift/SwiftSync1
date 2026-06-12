@@ -1200,6 +1200,40 @@
     });
   }
 
+  function appendChatRow(parent, msg) {
+    const authorOf = (m) =>
+      typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.formatChatAuthor
+        ? SwiftSyncSupport.formatChatAuthor(m)
+        : m.author || m.displayName || m.username || 'unknown';
+    const isJoin =
+      msg.kind === 'join' ||
+      (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.isJoinChatMessage?.(msg));
+    const row = document.createElement('div');
+    row.className = 'chat-msg' + (isJoin ? ' chat-msg-join' : '');
+    if (msg.platform) {
+      const badge = document.createElement('span');
+      badge.className = `chat-platform-badge ${msg.platform}`;
+      badge.textContent = CHAT_PLATFORM_LABELS[msg.platform] || msg.platform;
+      row.appendChild(badge);
+    }
+    if (isJoin) {
+      const text = document.createElement('span');
+      text.className = 'chat-msg-text chat-msg-join-text';
+      text.textContent = msg.text || `${authorOf(msg)} joined`;
+      row.appendChild(text);
+    } else {
+      const author = document.createElement('span');
+      author.className = 'chat-msg-author';
+      author.textContent = `${authorOf(msg)}: `;
+      if (msg.color) author.style.color = msg.color;
+      const text = document.createElement('span');
+      text.className = 'chat-msg-text';
+      text.textContent = msg.text || '';
+      row.append(author, text);
+    }
+    parent.appendChild(row);
+  }
+
   function renderChatMessages(messages) {
     if (messages) chatMessages = Array.isArray(messages) ? messages.slice() : chatMessages;
     if (!chatMessagesEl) return;
@@ -1215,30 +1249,7 @@
     }
     if (chatEmpty) chatEmpty.style.display = 'none';
 
-    visible.forEach((msg) => {
-      const row = document.createElement('div');
-      row.className = 'chat-msg';
-
-      if (msg.platform) {
-        const badge = document.createElement('span');
-        badge.className = `chat-platform-badge ${msg.platform}`;
-        badge.textContent = CHAT_PLATFORM_LABELS[msg.platform] || msg.platform;
-        row.appendChild(badge);
-      }
-
-      const author = document.createElement('span');
-      author.className = 'chat-msg-author';
-      author.textContent = msg.author || 'unknown';
-      if (msg.color) author.style.color = msg.color;
-
-      const text = document.createElement('span');
-      text.className = 'chat-msg-text';
-      text.textContent = msg.text || '';
-
-      row.append(author, text);
-
-      chatMessagesEl.appendChild(row);
-    });
+    visible.forEach((msg) => appendChatRow(chatMessagesEl, msg));
 
     if (chatChannelLabel) chatChannelLabel.textContent = formatChatLabel();
     if (chatSendInput) chatSendInput.disabled = !chatCanSend;
@@ -1252,25 +1263,9 @@
   function renderFloatChatMessagesInto(el) {
     if (!el) return;
     el.innerHTML = '';
-    const visible = filteredChatMessages();
-    visible.slice(-80).forEach((msg) => {
-      const row = document.createElement('div');
-      row.className = 'chat-msg';
-      if (msg.platform) {
-        const badge = document.createElement('span');
-        badge.className = `chat-platform-badge ${msg.platform}`;
-        badge.textContent = CHAT_PLATFORM_LABELS[msg.platform] || msg.platform;
-        row.appendChild(badge);
-      }
-      const author = document.createElement('span');
-      author.className = 'chat-msg-author';
-      author.textContent = (msg.author || msg.displayName || 'User') + ': ';
-      const text = document.createElement('span');
-      text.className = 'chat-msg-text';
-      text.textContent = msg.text || '';
-      row.append(author, text);
-      el.appendChild(row);
-    });
+    filteredChatMessages()
+      .slice(-80)
+      .forEach((msg) => appendChatRow(el, msg));
     el.scrollTop = el.scrollHeight;
   }
 

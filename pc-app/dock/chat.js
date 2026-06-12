@@ -21,7 +21,7 @@
       });
     });
   });
-  const code = (params.get('code') || '').toUpperCase();
+
   const wsUrl = `ws://${location.hostname || '127.0.0.1'}:${port}`;
   const httpBase = `http://${location.hostname || '127.0.0.1'}:${port}`;
 
@@ -29,6 +29,36 @@
   let messages = [];
   let canSend = false;
   let sendPlatforms = [];
+
+  function authorOf(m) {
+    if (!m || typeof m !== 'object') return 'unknown';
+    if (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.formatChatAuthor) {
+      return SwiftSyncSupport.formatChatAuthor(m);
+    }
+    const user = m.user;
+    if (user && typeof user === 'object') {
+      const nested =
+        user.username || user.displayName || user.display_name || user.name || user.slug;
+      if (nested && String(nested).trim()) return String(nested).trim();
+    }
+    const name = m.author || m.displayName || m.username || m.user;
+    const s = String(name || '').trim();
+    return s || 'unknown';
+  }
+
+  function isJoin(m) {
+    if (!m || typeof m !== 'object') return false;
+    if (m.kind === 'join') return true;
+    if (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.isJoinChatMessage) {
+      return SwiftSyncSupport.isJoinChatMessage(m);
+    }
+    const t = String(m.text || '');
+    return (
+      /\bjoined (the )?(chat|channel|stream|live)\b/i.test(t) ||
+      /\bhas joined\b/i.test(t) ||
+      /\bwelcome\b.*\bto the stream\b/i.test(t)
+    );
+  }
 
   function setStatus(text, cls) {
     if (!statusEl) return;
@@ -62,16 +92,26 @@
     messagesEl.innerHTML = '';
     for (const m of messages.slice(-200)) {
       const row = document.createElement('div');
-      row.className = 'chat-msg' + (isMod(m) ? ' mod' : '');
+      const join = isJoin(m);
+      row.className = 'chat-msg' + (isMod(m) ? ' mod' : '') + (join ? ' chat-msg-join' : '');
+
       const plat = document.createElement('span');
       plat.className = 'platform ' + platformClass(m.platform);
       plat.textContent = m.platform || '?';
-      const user = document.createElement('span');
-      user.className = 'user';
-      user.textContent = (m.displayName || m.username || 'User') + ': ';
-      const text = document.createElement('span');
-      text.textContent = m.text || '';
-      row.append(plat, user, text);
+
+      if (join) {
+        const text = document.createElement('span');
+        text.className = 'join-text';
+        text.textContent = m.text || `${authorOf(m)} joined`;
+        row.append(plat, text);
+      } else {
+        const user = document.createElement('span');
+        user.className = 'user';
+        user.textContent = authorOf(m) + ': ';
+        const text = document.createElement('span');
+        text.textContent = m.text || '';
+        row.append(plat, user, text);
+      }
       messagesEl.appendChild(row);
     }
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -90,7 +130,7 @@
   }
 
   function applyChatPayload(data) {
-    if (data.messages?.length) messages = data.messages;
+    if (Array.isArray(data.messages)) messages = data.messages;
     canSend = !!data.canSend;
     sendPlatforms = deriveSendPlatforms(data);
     if (platformSelect) {
@@ -147,6 +187,7 @@
         messages.push(data.message);
         while (messages.length > 300) messages.shift();
         renderMessages();
+        return;
       }
       if (data.type === 'chatStatus') {
         applyChatPayload(data);
@@ -155,7 +196,7 @@
     ws.onclose = () => {
       setStatus('Disconnected — is SwiftSync PC running?', 'err');
       showHelp(
-        'SwiftSync must run on this same PC. Connect chat in the app, then refresh this dock (⋮ → Refresh).'
+        'SwiftSync must run on this PC. Connect chat in the app, then refresh this dock (⋮ → Refresh).'
       );
       setTimeout(connect, 3000);
     };

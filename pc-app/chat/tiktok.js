@@ -233,6 +233,18 @@ function createTiktokConnector() {
     }, delay);
   }
 
+  function isJoinEventType(type) {
+    const t = String(type || '').toLowerCase();
+    return (
+      t === 'member' ||
+      t.includes('memberjoin') ||
+      t.includes('userjoin') ||
+      t.includes('viewerjoin') ||
+      t === 'roomuserseq' ||
+      (t.includes('join') && !t.includes('chat'))
+    );
+  }
+
   function isChatEventType(type) {
     const t = String(type || '').toLowerCase();
     return t === 'chat' || t.includes('chatmessage');
@@ -270,6 +282,25 @@ function createTiktokConnector() {
       root?.uniqueId;
     if (fallback) return String(fallback).trim();
     return 'Viewer';
+  }
+
+  function parseJoinEvent(data) {
+    const type = data.type || data.event || data.msgType || '';
+    if (!isJoinEventType(type)) return null;
+    const payload =
+      data.data && typeof data.data === 'object' && !Array.isArray(data.data)
+        ? data.data
+        : data;
+    const userObj = payload.user || data.user;
+    const author = formatTiktokAuthor(userObj, payload, data);
+    return {
+      id: String(payload.msgId || payload.id || data.id || `join-${Date.now()}-${author}`),
+      platform: 'tiktok',
+      author,
+      kind: 'join',
+      text: `${author} joined`,
+      timestamp: Date.now()
+    };
   }
 
   function parseChatEvent(data) {
@@ -317,6 +348,13 @@ function createTiktokConnector() {
     }
 
     captureRoomId(data);
+
+    const joinMsg = parseJoinEvent(data);
+    if (joinMsg) {
+      markConnected();
+      emitter.emit('message', joinMsg);
+      return;
+    }
 
     if (
       data.type === 'connected' ||
