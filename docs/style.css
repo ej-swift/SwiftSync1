@@ -484,6 +484,65 @@ h3 {
 
 .legal-strip strong { color: var(--text); }
 
+.mobile-link-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 760px) {
+  .mobile-link-grid { grid-template-columns: 1fr; }
+}
+
+.mobile-link-card {
+  display: block;
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.mobile-link-card:hover {
+  text-decoration: none;
+  border-color: rgba(0, 255, 133, 0.45);
+  transform: translateY(-2px);
+}
+
+.mobile-link-label {
+  display: inline-block;
+  margin-bottom: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mobile-link-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 1.15rem;
+}
+
+.mobile-link-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.mobile-link-card-accent {
+  border-color: rgba(0, 255, 133, 0.35);
+  background: linear-gradient(180deg, rgba(0, 255, 133, 0.08), var(--card));
+}
+
+.mobile-relay-hint {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+}
+
 .site-footer {
   border-top: 1px solid var(--border);
   padding: 2rem 0 2.5rem;
