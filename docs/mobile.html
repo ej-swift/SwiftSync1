@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SwiftSync">
+  <title>SwiftSync Mobile</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0b0d12;
+      color: #eef1f4;
+      padding: max(1.25rem, env(safe-area-inset-top)) 1rem max(1.5rem, env(safe-area-inset-bottom));
+      line-height: 1.5;
+    }
+    .wrap { max-width: 420px; margin: 0 auto; }
+    .mark {
+      width: 56px; height: 56px; border-radius: 14px; margin-bottom: 1rem;
+      background: linear-gradient(135deg, #00ff85, #00c96a);
+      display: grid; place-items: center; color: #04140c; font-weight: 800; font-size: 1.4rem;
+    }
+    h1 { margin: 0 0 0.35rem; font-size: 1.45rem; line-height: 1.15; }
+    p { margin: 0 0 1rem; color: #9aa3b2; }
+    a.btn {
+      display: block; text-align: center; text-decoration: none; font-weight: 700;
+      padding: 1rem; border-radius: 12px; margin: 0 0 0.75rem; font-size: 1rem;
+    }
+    .primary { background: #00ff85; color: #04140c; }
+    .secondary { background: #171b24; color: #eef1f4; border: 1px solid #2a3140; }
+    .tip { font-size: 0.88rem; color: #9aa3b2; margin-top: 1.25rem; }
+    .tip strong { color: #eef1f4; }
+    .desktop { margin-top: 1.5rem; font-size: 0.88rem; }
+    .desktop a { color: #00ff85; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="mark" aria-hidden="true">S</div>
+    <h1>SwiftSync on your phone</h1>
+    <p>Tap a button below. Use Safari or Chrome — not TikTok’s in-app browser.</p>
+
+    <a class="btn primary" href="https://swiftsync-relay.fly.dev/mobile/?mode=chat">Chat only — no PC</a>
+    <a class="btn secondary" href="https://swiftsync-relay.fly.dev/mobile/">Full control — pair with PC</a>
+    <a class="btn secondary" href="https://swiftsync-relay.fly.dev/">Open SwiftSync home</a>
+
+    <p class="tip"><strong>Tip:</strong> Long-press a button → Open in Safari, or copy the link and paste in Chrome.</p>
+    <p class="desktop">Desktop site: <a href="index.html?desktop=1">full SwiftSync website</a></p>
+  </div>
+</body>
+</html>

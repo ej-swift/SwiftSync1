@@ -172,6 +172,8 @@ img { max-width: 100%; height: auto; }
   .site-nav .nav-muted { display: none; }
   .site-nav .nav-mobile,
   .site-nav .btn-primary { display: inline-flex !important; }
+  .preview-stack { display: none; }
+  .hero { padding-top: 2rem; }
 }
 
 .site-nav .nav-mobile {

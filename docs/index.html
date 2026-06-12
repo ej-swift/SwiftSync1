@@ -3,6 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function () {
+      if (/[?&]desktop=1/.test(location.search)) return;
+      var ua = navigator.userAgent || '';
+      if (/Android|webOS|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile/i.test(ua)) {
+        var base = location.pathname.replace(/\/[^/]*$/, '/');
+        location.replace(base + 'mobile.html' + location.search + location.hash);
+      }
+    })();
+  </script>
   <title>SwiftSync — OBS &amp; multi-platform chat control from your phone</title>
   <meta name="description" content="SwiftSync is a Windows desktop app for streamers. Control OBS scenes, audio, and Twitch, Kick, YouTube, and TikTok chat from your phone while you stream.">
   <link rel="icon" href="favicon.ico" sizes="any">
