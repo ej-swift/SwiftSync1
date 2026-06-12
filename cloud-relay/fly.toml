@@ -1,0 +1,26 @@
+# fly.toml app configuration file generated for SwiftSync cloud relay
+
+app = 'swiftsync-relay'
+primary_region = 'iad'
+
+# Deploy from repo root (see deploy.ps1):
+#   flyctl deploy . --config cloud-relay/fly.toml --dockerfile cloud-relay/Dockerfile
+[build]
+  dockerfile = 'Dockerfile'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+  # In-memory pairing rooms require a single machine. deploy.ps1 runs: fly scale count 1
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    method = 'GET'
+    path = '/api/health'
+
+[env]
+  PORT = '8080'

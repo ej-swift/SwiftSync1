@@ -1,0 +1,17 @@
+{
+  "name": "swiftsync-cloud-relay",
+  "version": "1.0.0",
+  "description": "SwiftSync cloud relay — pairs PC and mobile over the internet",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@eulerstream/euler-api-sdk": "^0.3.0",
+    "ws": "^8.13.0"
+  }
+}

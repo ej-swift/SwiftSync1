@@ -1,0 +1,2286 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SwiftSync PC App</title>
+
+  <style>
+    :root {
+      --font-ui: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      --font-mono: 'Cascadia Mono', 'Consolas', 'Segoe UI Mono', monospace;
+      --text-primary: #f3f4f6;
+      --text-secondary: #d1d5db;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --line-height: 1.5;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      background: #000;
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 15px;
+      line-height: var(--line-height);
+      -webkit-font-smoothing: antialiased;
+      margin-left: 80px;
+      padding: 0;
+      text-align: center;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 100%;
+      background: #0a0a0a;
+      border-right: 2px solid #222;
+      display: flex;
+      flex-direction: column;
+      padding-top: 20px;
+      box-shadow: 4px 0 10px rgba(0,0,0,0.4);
+      z-index: 100;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-family: var(--font-ui);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 20px 0;
+      cursor: pointer;
+      transition: color 0.2s ease, text-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: #00ff85;
+      text-shadow: 0 0 8px rgba(0, 255, 133, 0.6);
+      filter: drop-shadow(0 0 6px rgba(0, 255, 133, 0.35));
+      transform: translateX(5px);
+    }
+
+    .tab-btn.active {
+      color: #00ff85;
+      text-shadow: 0 0 8px rgba(0, 255, 133, 0.6);
+    }
+
+    /* Main shell — one page visible at a time */
+    #main-shell {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #global-status {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      border-bottom: 1px solid #222;
+      background: #050505;
+    }
+
+    .global-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .corner-logo {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      filter: drop-shadow(0 0 8px rgba(0, 255, 133, 0.3));
+      opacity: 0.95;
+    }
+
+    /* PC: one tab visible, scroll this region (no horizontal carousel) */
+    body.pc-simple-tabs #page-viewport {
+      flex: 1 1 0;
+      height: 0;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: scroll;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      background: radial-gradient(ellipse at 50% 0%, #121212 0%, #060606 55%);
+      position: relative;
+    }
+
+    body.pc-simple-tabs #pc-cube-track {
+      display: block;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+    body.pc-simple-tabs #page-viewport .app-page {
+      display: none;
+      width: 100% !important;
+      max-width: 100% !important;
+      flex: none !important;
+      height: auto !important;
+      max-height: none !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+      pointer-events: auto !important;
+      padding: 20px 20px 80px;
+      box-sizing: border-box;
+    }
+
+    body.pc-simple-tabs #page-viewport .app-page.panel-active {
+      display: block !important;
+    }
+
+    #page-viewport.tab-slide-viewport {
+      flex: 1;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      background: radial-gradient(ellipse at 50% 0%, #121212 0%, #060606 55%);
+      position: relative;
+    }
+
+    #page-viewport.tab-slide-scroll-viewport {
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    #page-viewport.tab-slide-scroll-viewport #pc-cube-track.tab-slide-track {
+      height: auto;
+      min-height: 100%;
+      align-items: stretch;
+    }
+
+    #page-viewport.tab-slide-scroll-viewport .app-page.tab-slide-page {
+      height: auto;
+      max-height: none;
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: visible;
+    }
+
+    #pc-cube-track.tab-slide-track {
+      height: 100%;
+      align-items: stretch;
+      transition: transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
+      will-change: transform;
+    }
+
+    /* Fallback if tab-slide.js fails to load */
+    .app-page {
+      display: none;
+      padding: 20px 20px 80px;
+      box-sizing: border-box;
+    }
+
+    .app-page.panel-active:not(.tab-slide-page) {
+      display: block;
+    }
+
+    #pc-cube-track.tab-slide-track.dragging {
+      transition: none;
+    }
+
+    .app-page.tab-slide-page {
+      display: block !important;
+      flex: 0 0 auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      padding: 20px 20px 80px;
+      box-sizing: border-box;
+    }
+
+    /* Per-page scroll (mobile / fallback) */
+    #page-viewport:not(.tab-slide-scroll-viewport) .app-page.tab-slide-page {
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+
+    .app-page.tab-slide-page:not(.tab-slide-active) {
+      pointer-events: none;
+    }
+
+    .app-page.tab-slide-page.tab-slide-active,
+    .app-page.tab-slide-page.panel-active {
+      pointer-events: auto;
+    }
+
+
+    @media (prefers-reduced-motion: reduce) {
+      #pc-cube-track.tab-slide-track {
+        transition-duration: 0.2s;
+      }
+    }
+
+    .tab-btn {
+      transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1), color 0.2s ease, border-color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      transform: translateX(4px) scale(1.02);
+    }
+
+    .tab-btn.active {
+      transform: translateX(6px) scale(1.04);
+      box-shadow: 0 0 18px rgba(0, 255, 133, 0.2);
+    }
+
+    /* Logo — Home tab only */
+    #logo-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    #swift-logo {
+      width: 140px;
+      height: 140px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      animation: logoBounce 1.2s ease-out, logoGlow 3s infinite alternate;
+      filter: drop-shadow(0 0 12px rgba(255,255,255,0.25));
+    }
+
+    @keyframes logoBounce {
+      0% { transform: scale(0.4); opacity: 0; }
+      60% { transform: scale(1.25); opacity: 1; }
+      80% { transform: scale(0.92); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes logoGlow {
+      0% { filter: drop-shadow(0 0 12px #00ff85); }
+      33% { filter: drop-shadow(0 0 18px #00c7ff); }
+      66% { filter: drop-shadow(0 0 18px #ff2d55); }
+      100% { filter: drop-shadow(0 0 12px #a259ff); }
+    }
+
+    /* Shared tab page layout (Scenes, Tools, future tabs) */
+    .tab-page {
+      max-width: 980px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .tab-page .panel-title,
+    .tab-page .panel-subtitle,
+    .tab-page .panel-toolbar {
+      text-align: left;
+    }
+
+    .tab-grid {
+      width: 100%;
+      margin: 0 auto 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 8px;
+      overflow: visible;
+    }
+
+    .tab-card,
+    .scene-card {
+      width: 100%;
+      min-width: 0;
+      padding: 8px 10px;
+      margin: 0;
+      background: #1a1a1a;
+      color: white;
+      border: 2px solid #333;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.35;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      text-align: center;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .tab-card-meta,
+    .scene-card .scene-link {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      font-family: var(--font-ui);
+      color: #00c7ff;
+      line-height: 1.3;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tab-card > span:first-child,
+    .scene-card > span:first-child {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tab-card:hover,
+    .scene-card:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+      box-shadow:
+        0 0 10px rgba(0, 255, 133, 0.3),
+        0 0 22px rgba(0, 255, 133, 0.12);
+    }
+
+    .tab-card.active,
+    .scene-card.active,
+    .scene-card-wrap.active .scene-card {
+      border-color: #00ff85;
+      color: #00ff85;
+      background: #0a1f14;
+      box-shadow: 0 0 14px rgba(0, 255, 133, 0.2);
+    }
+    .scene-card-wrap.active {
+      border-color: #00ff85;
+      box-shadow: 0 0 14px rgba(0, 255, 133, 0.2);
+    }
+    .scene-card-wrap.active .scene-switch-btn {
+      border-left-color: rgba(0,255,133,0.2);
+    }
+
+    .tab-context,
+    #scene-context,
+    #tools-context {
+      width: 100%;
+      max-width: 960px;
+      margin: 16px auto 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      text-align: left;
+    }
+
+    .tab-context-header,
+    #linked-scenes-header {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin: 0 0 12px;
+      font-family: var(--font-ui);
+      text-align: center;
+    }
+
+    .tab-context-pane {
+      background: #0d0d0d;
+      border: 2px solid #222;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .tool-control-section {
+      padding: 10px 0;
+      border-bottom: 1px solid #222;
+    }
+
+    .tool-control-section:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .tool-control-section:first-child {
+      padding-top: 0;
+    }
+
+    .tool-control-section .tool-btn {
+      width: 100%;
+      margin: 8px 0 0;
+    }
+
+    .tool-control-section .tool-btn + .tool-btn {
+      margin-top: 8px;
+    }
+
+    .tool-status-card {
+      cursor: default;
+    }
+
+    .tool-status-card .tool-state {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      padding: 0;
+      border: none;
+      color: var(--text-dim);
+      box-shadow: none;
+    }
+
+    .tool-status-card .tool-state.live {
+      color: #00ff85;
+    }
+
+    .tool-status-card .tool-state.on {
+      color: #ff4444;
+    }
+
+    #connect-btn,
+    #reconnect-btn {
+      pointer-events: auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* COPY/PASTE ENABLED INPUTS */
+    #connect-screen input {
+      flex: 1;
+      min-width: 0;
+      padding: 12px 16px;
+      margin: 0;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: white;
+      font-family: var(--font-ui);
+      font-size: 18px;
+      font-weight: 500;
+      text-align: left;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      pointer-events: auto;
+      caret-color: #00ff85;
+      outline: none;
+    }
+
+    .obs-field-row {
+      width: 85%;
+      margin: 10px auto 0;
+      text-align: left;
+    }
+
+    .obs-field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-family: var(--font-ui);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .obs-field-controls {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .grab-obs-btn {
+      flex: 0 0 auto;
+      padding: 0 12px;
+      background: #151515;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .grab-obs-btn:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+    }
+
+    #connect-screen input:focus {
+      border-color: #00ff85;
+    }
+
+    .input-hint {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      margin-top: 8px;
+      font-family: var(--font-ui);
+    }
+
+    #connect-btn,
+    #reconnect-btn,
+    #scenes button {
+      transition:
+        border-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+    }
+
+    #connect-btn {
+      width: 85%;
+      padding: 14px;
+      margin-top: 15px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 10px;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+    }
+
+    #connect-btn:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+      box-shadow:
+        0 0 10px rgba(0, 255, 133, 0.25),
+        0 0 20px rgba(0, 255, 133, 0.12);
+    }
+
+    #reconnect-btn {
+      width: 85%;
+      padding: 14px;
+      margin-top: 15px;
+      background: #330000;
+      border: 2px solid #660000;
+      border-radius: 10px;
+      color: #ff4444;
+      font-size: 18px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      display: none;
+    }
+
+    #reconnect-btn:hover {
+      border-color: #ff6666;
+      color: #ff8888;
+      box-shadow:
+        0 0 10px rgba(255, 68, 68, 0.3),
+        0 0 20px rgba(255, 68, 68, 0.12);
+    }
+
+    .pill-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 0;
+      font-size: 14px;
+    }
+    .pill {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid #333;
+      color: var(--text-dim);
+      font-family: var(--font-ui);
+      font-weight: 600;
+    }
+    .pill.ok { border-color: #00ff85; color: #00ff85; }
+    .pill.err { border-color: #ff4444; color: #ff4444; }
+
+    #obs-info { font-size: 14px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+    #status {
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.45;
+      margin-top: 10px;
+      color: var(--text-secondary);
+    }
+
+    .mixer-row {
+      width: 85%;
+      margin: 14px auto;
+      padding: 14px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 10px;
+      text-align: left;
+    }
+    .mixer-row label { display: block; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .mixer-row input[type="range"] { width: 100%; margin: 8px 0; accent-color: #00ff85; }
+    .mixer-row .vol-val { font-size: 14px; color: var(--text-muted); }
+    .mixer-row .mute-btn {
+      margin-top: 8px;
+      padding: 8px 16px;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .mixer-row .mute-btn:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+      box-shadow: 0 0 10px rgba(0, 255, 133, 0.25);
+    }
+    .mixer-row .mute-btn.muted { border-color: #660000; color: #ff4444; }
+
+    .tool-btn {
+      width: 85%;
+      padding: 14px;
+      margin: 10px 0;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .tool-btn:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+      box-shadow: 0 0 10px rgba(0, 255, 133, 0.25);
+    }
+    .tool-btn.live { border-color: #ff4444; color: #ff4444; }
+
+    .empty-hint { color: var(--text-dim); font-size: 15px; line-height: 1.45; margin-top: 20px; }
+
+    .panel-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      letter-spacing: 0.02em;
+      font-family: var(--font-ui);
+    }
+
+    .panel-subtitle {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      margin-bottom: 20px;
+      font-family: var(--font-ui);
+    }
+
+    .panel-toolbar {
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .tool-btn.subtle {
+      width: auto;
+      padding: 8px 20px;
+      font-size: 14px;
+      display: inline-block;
+    }
+
+    .mixer-row .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mixer-row .slider-row input[type="range"] {
+      flex: 1;
+      margin: 0;
+    }
+
+    .mixer-row .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mixer-row .mute-btn,
+    .mixer-row .vol-btn {
+      flex: 1;
+      min-width: 80px;
+    }
+
+    .mixer-row .vol-btn {
+      padding: 8px 12px;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .mixer-row .vol-btn:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+      box-shadow: 0 0 10px rgba(0, 255, 133, 0.25);
+    }
+
+    #scene-list.scene-grid-pc {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto 16px;
+    }
+
+    .canvas-preview {
+      position: relative;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto 16px;
+      aspect-ratio: 16 / 9;
+      background: #0a0c12;
+      border-radius: 12px;
+      border: 1px solid #2a2e3a;
+      overflow: hidden;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .canvas-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+    .canvas-preview.has-image img {
+      display: block;
+    }
+    .canvas-preview.has-image .canvas-preview-placeholder {
+      display: none;
+    }
+    .canvas-preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      font-size: 13px;
+      font-style: italic;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .canvas-diagnostic {
+      max-width: 960px;
+      margin: 0 auto 12px;
+      padding: 8px 12px;
+      background: rgba(240, 193, 75, 0.08);
+      border: 1px solid rgba(240, 193, 75, 0.25);
+      border-radius: 8px;
+      font-size: 12px;
+      color: #f0c14b;
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    }
+    .canvas-diagnostic-label {
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    .canvas-diagnostic.success {
+      background: rgba(0, 255, 133, 0.08);
+      border-color: rgba(0, 255, 133, 0.25);
+      color: #00ff85;
+    }
+    .canvas-diagnostic.warning {
+      background: rgba(255, 68, 68, 0.08);
+      border-color: rgba(255, 68, 68, 0.25);
+      color: #ff8888;
+    }
+
+    .vertical-mapping {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      font-size: 0.85em;
+    }
+    .vertical-mapping summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-primary, #d8e1ec);
+      padding: 4px 0;
+    }
+    .vertical-mapping-hint {
+      margin: 8px 0 12px;
+      color: var(--text-muted, #94a0b3);
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .vertical-mapping-list {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 6px 10px;
+      align-items: center;
+      max-height: 280px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+    }
+    .vertical-mapping-list .vmap-arrow {
+      color: var(--text-muted, #94a0b3);
+      font-size: 0.9em;
+      text-align: center;
+    }
+    .vertical-mapping-list .vmap-main {
+      color: var(--text-primary, #d8e1ec);
+      font-weight: 500;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+    }
+    .vertical-mapping-list input.vmap-vert {
+      width: 100%;
+      padding: 5px 8px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: var(--text-primary, #d8e1ec);
+      font: inherit;
+    }
+    .vertical-mapping-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .scenes-sources-stack {
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #scene-list.tab-grid,
+    #tools-list.tab-grid {
+      max-width: 960px;
+    }
+
+    #scene-list.scene-pairs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto 12px;
+    }
+
+    .scene-pair-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .scene-pair-row.single {
+      grid-template-columns: 1fr;
+    }
+
+    .scene-card-wrap {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: border-color 0.15s;
+    }
+    .scene-card-wrap.active {
+      border-color: var(--accent, #00c7ff);
+    }
+    .scene-card-wrap .scene-card.main-pane {
+      flex: 1;
+      border: none;
+      border-radius: 0;
+    }
+    .scene-switch-btn {
+      background: rgba(0,199,255,0.08);
+      border: none;
+      border-left: 1px solid rgba(255,255,255,0.08);
+      color: var(--accent, #00c7ff);
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 12px;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+    }
+    .scene-switch-btn:hover {
+      background: rgba(0,199,255,0.18);
+    }
+    .scene-switch-btn:active {
+      background: rgba(0,199,255,0.28);
+    }
+
+    .scene-card.main-pane,
+    .scene-card.vertical-pane {
+      width: 100%;
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .scene-card.vertical-pane {
+      border-color: #1a3340;
+    }
+
+    .scene-card.vertical-pane:hover,
+    .scene-card.vertical-pane.active {
+      border-color: #00c7ff;
+      color: #00c7ff;
+      background: #0a1520;
+    }
+
+    .scene-card-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .scene-card.vertical-pane .scene-card-label {
+      color: #00c7ff;
+    }
+
+    .scene-card-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .scene-card-vertical-link {
+      display: block;
+      font-size: 10px;
+      color: #00c7ff;
+      margin-top: 2px;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 720px) {
+      .scene-pair-row { grid-template-columns: 1fr; }
+    }
+
+    .scene-card:not(.has-link) .scene-link {
+      display: none;
+    }
+
+    .pairing-box {
+      width: 85%;
+      margin: 24px auto 0;
+      padding: 20px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 12px;
+    }
+
+    .pairing-box h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-family: var(--font-ui);
+    }
+
+    .pairing-box p {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      font-family: var(--font-ui);
+      margin-bottom: 16px;
+    }
+
+    #pairing-qr {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 12px;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    #pairing-qr.visible { display: block; }
+
+    #pairing-code {
+      font-size: 32px;
+      letter-spacing: 6px;
+      color: #00ff85;
+      margin: 8px 0;
+      font-family: var(--font-mono);
+    }
+
+    #pairing-url {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      word-break: break-all;
+      margin-bottom: 12px;
+    }
+
+    #regenerate-pairing-btn {
+      width: auto;
+      padding: 8px 20px;
+      font-size: 16px;
+    }
+
+    #mobile-pill.ok { border-color: #00c7ff; color: #00c7ff; }
+
+    .canvas-bar {
+      width: 85%;
+      max-width: 520px;
+      margin: 0 auto 16px;
+      text-align: left;
+    }
+
+    .canvas-bar label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-family: var(--font-ui);
+    }
+
+    #canvas-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-family: var(--font-ui);
+    }
+
+    #canvas-select:focus {
+      border-color: #00ff85;
+      outline: none;
+    }
+
+    #canvas-hint {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      margin-top: -8px;
+      margin-bottom: 12px;
+      font-family: var(--font-ui);
+    }
+
+    .linked-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .linked-columns.single {
+      grid-template-columns: 1fr;
+    }
+
+    @media (max-width: 720px) {
+      .linked-columns { grid-template-columns: 1fr; }
+    }
+
+    .canvas-pane {
+      background: #0d0d0d;
+      border: 2px solid #222;
+      border-radius: 12px;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .canvas-pane.vertical {
+      border-color: #1a3340;
+    }
+
+    .canvas-pane-header {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin: 0 0 10px;
+      font-family: var(--font-ui);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .canvas-pane-header .canvas-tag {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: normal;
+    }
+
+    .canvas-pane-hint {
+      font-size: 13px;
+      color: #f0c14b;
+      text-align: left;
+      margin: 0 0 10px;
+      line-height: 1.4;
+    }
+
+    .diagnose-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .diagnose-modal {
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 16px;
+      width: min(720px, 95vw);
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .diagnose-modal h3 {
+      margin: 0 0 8px;
+      color: #00ff85;
+      font-size: 18px;
+    }
+
+    .diagnose-modal-note {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .diagnose-modal textarea {
+      flex: 1;
+      min-height: 280px;
+      background: #0a0a0a;
+      color: #e5e7eb;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.4;
+      resize: vertical;
+    }
+
+    .diagnose-modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      justify-content: flex-end;
+    }
+
+    .canvas-pane-header strong {
+      color: #00ff85;
+      font-weight: 600;
+    }
+
+    .canvas-pane.vertical .canvas-pane-header strong {
+      color: #00c7ff;
+    }
+
+    .source-section {
+      margin-bottom: 8px;
+    }
+
+    .source-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .source-section-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-family: var(--font-ui);
+    }
+
+    .source-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 130px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .source-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      min-width: 0;
+    }
+
+    .source-row.audio {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .source-row.off,
+    .source-row.muted .source-row-name {
+      opacity: 0.5;
+    }
+
+    .source-row-name {
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .source-row-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .source-row-controls input[type="range"] {
+      width: 100px;
+      margin: 0;
+      accent-color: #00ff85;
+    }
+
+    .src-vol-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      min-width: 52px;
+      text-align: right;
+    }
+
+    .src-btn {
+      padding: 5px 10px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .src-btn:hover {
+      border-color: #00ff85;
+      color: #00ff85;
+    }
+
+    .src-btn.muted,
+    .src-btn.active-off {
+      border-color: #660000;
+      color: #ff6666;
+    }
+
+    .source-chip-empty {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-family: var(--font-ui);
+    }
+
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin: 8px 0 4px;
+      text-align: left;
+    }
+
+    .chat-setup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .chat-platform-block {
+      padding: 10px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chat-platform-block input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .chat-platform-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+
+    .chat-platform-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+    }
+
+    .chat-platform-badge.twitch { background: #9146ff; }
+    .chat-platform-badge.kick { background: #53fc18; color: #000; }
+    .chat-platform-badge.youtube { background: #ff0000; }
+    .chat-platform-badge.tiktok { background: #010101; border: 1px solid #69c9d0; color: #69c9d0; }
+
+    .chat-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin: 0;
+    }
+
+    .chat-setup-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .chat-send-platform {
+      min-width: 88px;
+      max-width: 120px;
+      font-size: 13px;
+      background: #111;
+      color: var(--text-primary);
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 6px 8px;
+    }
+
+    .chat-msg .chat-platform-badge {
+      margin-right: 6px;
+      vertical-align: middle;
+      font-size: 9px;
+      padding: 1px 6px;
+    }
+
+    .chat-setup-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .chat-setup-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-oauth-details {
+      margin-top: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: left;
+    }
+
+    .chat-oauth-details summary {
+      cursor: pointer;
+      color: #00ff85;
+      margin-bottom: 8px;
+    }
+
+    .chat-oauth-details input {
+      width: 100%;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+
+    .chat-oauth-setup {
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 10px;
+      background: #0a0a0a;
+      text-align: left;
+    }
+
+    .chat-oauth-setup summary {
+      cursor: pointer;
+      color: #00ff85;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .chat-oauth-redirect {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 0 12px;
+      word-break: break-all;
+    }
+
+    .chat-oauth-redirect code {
+      color: #69c9d0;
+      font-size: 12px;
+    }
+
+    .chat-oauth-fields label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 8px 0 4px;
+    }
+
+    .chat-oauth-fields input {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 4px;
+    }
+
+    .chat-oauth-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      align-items: center;
+    }
+
+    .chat-oauth-portals {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chat-oauth-portals a,
+    .chat-oauth-portals button {
+      font-size: 12px;
+      color: #69c9d0;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .chat-oauth-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin: 8px 0 0;
+      line-height: 1.45;
+    }
+
+    .relay-oauth-banner {
+      font-size: 13px;
+      color: #00ff85;
+      background: rgba(0, 255, 133, 0.08);
+      border: 1px solid rgba(0, 255, 133, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 0 0 8px;
+    }
+
+    .chat-auth-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      margin-top: 0.35rem;
+    }
+
+    .chat-login-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: #444;
+    }
+
+    .chat-login-btn[data-oauth="twitch"] { background: #9146ff; }
+    .chat-login-btn[data-oauth="kick"] { background: #53fc18; color: #000; }
+    .chat-login-btn[data-oauth="youtube"] { background: #ff0000; }
+    .chat-login-btn[data-oauth="tiktok"] { background: #010101; border: 1px solid #69c9d0; color: #69c9d0; }
+
+    .chat-login-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .chat-logout-btn {
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.72rem;
+      background: transparent;
+      color: #9aa0a6;
+      cursor: pointer;
+    }
+
+    .chat-account-status {
+      font-size: 0.75rem;
+      color: #9aa0a6;
+      margin: 0.15rem 0 0;
+      min-height: 1rem;
+      text-align: left;
+    }
+
+    .chat-account-status.signed-in {
+      color: #00ff85;
+    }
+
+    .chat-link-btn {
+      border: none;
+      background: none;
+      color: #69c9d0;
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .chat-dock-bar {
+      margin: 12px 0;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #2a2a2a;
+      background: #111;
+    }
+    .chat-dock-bar h3 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      color: #e8e8e8;
+    }
+    .chat-dock-bar p {
+      margin: 0 0 10px;
+      font-size: 11px;
+      color: #888;
+      line-height: 1.4;
+    }
+    .chat-dock-url-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .chat-dock-url-row code {
+      flex: 1;
+      min-width: 0;
+      font-size: 10px;
+      padding: 6px 8px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #00ff85;
+      word-break: break-all;
+    }
+    .chat-dock-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .chat-dock-note {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #0d1a14;
+      border: 1px solid #1e3a2a;
+      font-size: 11px;
+      color: #9ec4b0;
+      line-height: 1.45;
+    }
+    .chat-dock-note strong {
+      color: #00ff85;
+    }
+    .chat-dock-steps {
+      margin: 0 0 12px;
+      padding-left: 1.2rem;
+      font-size: 11px;
+      color: #aaa;
+      line-height: 1.5;
+    }
+    .chat-dock-steps li {
+      margin-bottom: 6px;
+    }
+    .chat-dock-steps strong {
+      color: #ddd;
+    }
+    .chat-dock-prereq {
+      margin: 0 0 10px;
+      font-size: 11px;
+      color: #888;
+    }
+    .chat-dock-prereq span {
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .chat-dock-prereq .ok {
+      color: #00ff85;
+    }
+
+    .chat-status {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+      text-align: left;
+    }
+
+    .chat-signin-feedback {
+      font-size: 13px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #141820;
+      color: #e8eaed;
+      min-height: 1.2em;
+    }
+
+    .chat-signin-feedback:empty {
+      display: none;
+    }
+
+    .chat-messages {
+      min-height: 240px;
+      max-height: 52vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+
+    .chat-msg {
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .chat-msg-author {
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .chat-compose {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .chat-compose input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-compose input:disabled,
+    .chat-compose button:disabled,
+    .chat-send-platform:disabled {
+      opacity: 0.45;
+    }
+
+    /* ── Audio panel: full height, no clip ── */
+    #audio-panel .source-rows {
+      max-height: none;
+      overflow-y: visible;
+    }
+
+    /* ── Scene page: Audio Inputs section ── */
+    .scene-audio-section {
+      max-width: 960px;
+      margin: 20px auto 0;
+      padding-top: 16px;
+      border-top: 1px solid #222;
+    }
+    .scene-audio-section-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 0 10px;
+      font-family: var(--font-ui);
+      text-align: left;
+    }
+    .scene-audio-section .source-rows {
+      max-height: none;
+      overflow-y: visible;
+    }
+    .scene-audio-section-hint {
+      font-size: 11px;
+      color: var(--text-muted, #94a0b3);
+      margin: 0 0 12px;
+      line-height: 1.4;
+    }
+    .scene-audio-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .scene-audio-group-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent, #00c7ff);
+      margin: 0 0 6px;
+      letter-spacing: 0.04em;
+    }
+    .scene-audio-group .scene-audio-group-label {
+      color: #00c7ff;
+    }
+    .scene-audio-group:first-child .scene-audio-group-label {
+      color: #00ff85;
+    }
+
+    /* ── 3D depth system ── */
+    :root {
+      --shadow-card: 0 1px 0 rgba(255,255,255,0.05) inset, 0 2px 6px rgba(0,0,0,0.65), 0 1px 2px rgba(0,0,0,0.85);
+      --shadow-card-hover: 0 1px 0 rgba(255,255,255,0.07) inset, 0 6px 18px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.85);
+      --shadow-card-press: 0 2px 5px rgba(0,0,0,0.55) inset, 0 1px 2px rgba(0,0,0,0.5);
+      --shadow-btn: 0 1px 0 rgba(255,255,255,0.04) inset, 0 2px 6px rgba(0,0,0,0.6);
+      --shadow-btn-hover: 0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 10px rgba(0,0,0,0.65);
+      --shadow-btn-press: 0 2px 4px rgba(0,0,0,0.55) inset;
+      --grad-card: linear-gradient(180deg, #222 0%, #181818 100%);
+      --grad-card-active: linear-gradient(180deg, #0e2218 0%, #091910 100%);
+      --grad-btn: linear-gradient(180deg, #242424 0%, #191919 100%);
+    }
+
+    .tab-card, .scene-card {
+      background: var(--grad-card);
+      box-shadow: var(--shadow-card);
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s, color 0.15s, background 0.15s;
+    }
+    .tab-card:hover, .scene-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card-hover), 0 0 14px rgba(0,255,133,0.18);
+    }
+    .tab-card:active, .scene-card:active {
+      transform: translateY(1px);
+      box-shadow: var(--shadow-card-press);
+    }
+    .tab-card.active, .scene-card.active {
+      background: var(--grad-card-active);
+      box-shadow: var(--shadow-card-press), 0 0 16px rgba(0,255,133,0.18);
+      transform: none;
+    }
+
+    #connect-btn {
+      background: var(--grad-btn);
+      box-shadow: var(--shadow-btn);
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, background 0.15s;
+    }
+    #connect-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-btn-hover), 0 0 12px rgba(0,255,133,0.2);
+    }
+    #connect-btn:active { transform: translateY(1px); box-shadow: var(--shadow-btn-press); }
+
+    #reconnect-btn {
+      background: linear-gradient(180deg, #3a0000 0%, #280000 100%);
+      box-shadow: var(--shadow-btn);
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    #reconnect-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-btn-hover); }
+    #reconnect-btn:active { transform: translateY(1px); box-shadow: var(--shadow-btn-press); }
+
+    .tool-btn {
+      background: var(--grad-btn);
+      box-shadow: var(--shadow-btn);
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, background 0.15s;
+    }
+    .tool-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-btn-hover), 0 0 10px rgba(0,255,133,0.18);
+    }
+    .tool-btn:active { transform: translateY(1px); box-shadow: var(--shadow-btn-press); }
+
+    .mixer-row {
+      background: linear-gradient(180deg, #1e1e1e 0%, #181818 100%);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 4px 12px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    .source-row {
+      background: linear-gradient(180deg, #1f1f1f 0%, #191919 100%);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 5px rgba(0,0,0,0.4);
+    }
+
+    .pairing-box {
+      background: linear-gradient(180deg, #1e1e1e 0%, #181818 100%);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 6px 22px rgba(0,0,0,0.65);
+    }
+
+    #sidebar {
+      background: linear-gradient(180deg, #0e0e0e 0%, #090909 100%);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.85), 2px 0 6px rgba(0,0,0,0.7);
+    }
+
+    #global-status {
+      background: linear-gradient(180deg, #0b0b0b 0%, #070707 100%);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.65);
+    }
+
+    #connect-screen input {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.45) inset, 0 1px 0 rgba(255,255,255,0.02);
+    }
+
+    .tab-context-pane {
+      background: linear-gradient(180deg, #0f0f0f 0%, #0b0b0b 100%);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.55) inset, 0 1px 0 rgba(255,255,255,0.02);
+    }
+
+    .src-btn {
+      background: linear-gradient(180deg, #181818 0%, #131313 100%);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 4px rgba(0,0,0,0.45);
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    .src-btn:hover { transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 3px 7px rgba(0,0,0,0.55); }
+    .src-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.5) inset; }
+
+    .pill {
+      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 5px rgba(0,0,0,0.55);
+    }
+
+    .grab-obs-btn {
+      background: linear-gradient(180deg, #1c1c1c 0%, #141414 100%);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 2px 5px rgba(0,0,0,0.5);
+      transition: border-color 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .grab-obs-btn:hover { transform: translateY(-1px); }
+    .grab-obs-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,0.5) inset; }
+
+    .setup-checklist-title { margin: 0 0 8px; font-size: 15px; color: var(--text-secondary); text-align: left; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .setup-checklist { text-align: left; max-width: 520px; margin: 0 auto 12px; padding-left: 22px; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+    .setup-checklist-item { margin-bottom: 6px; }
+    .setup-checklist-item.done { color: #00ff85; list-style-type: '✓ '; }
+    .setup-checklist-all-done { font-size: 12px; color: #00ff85; max-width: 520px; margin: 0 auto 14px; }
+    .relay-health { max-width: 520px; margin: 0 auto 12px; padding: 10px 12px; border-radius: 8px; border: 1px solid #3a2a10; background: #1a1408; text-align: left; }
+    .relay-health.ok { border-color: #1a3a28; background: #0d1a12; }
+    .relay-health p { margin: 0 0 8px; font-size: 12px; color: #f0c14b; line-height: 1.4; }
+    .relay-health.ok p { color: #9fd4b8; }
+    .relay-health-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .scene-card-switch-hint { display: block; font-size: 10px; color: var(--text-dim); margin-top: 2px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+    .version-banner { font-size: 11px; color: #7eb8ff; margin-left: 8px; }
+    .chat-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; align-items: center; }
+    .chat-filter-chip { font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid #333; background: #111; color: #aaa; cursor: pointer; }
+    .chat-filter-chip.active { border-color: #00ff85; color: #00ff85; }
+    .chat-filter-toggle { font-size: 11px; color: #888; display: flex; align-items: center; gap: 4px; }
+  </style>
+</head>
+
+<body class="pc-simple-tabs">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <button type="button" class="tab-btn active" data-tab="connect">Home</button>
+    <button type="button" class="tab-btn" data-tab="scenes">Scenes</button>
+    <button type="button" class="tab-btn" data-tab="audio">Audio</button>
+    <button type="button" class="tab-btn" data-tab="chat">Chat</button>
+    <button type="button" class="tab-btn" data-tab="tools">Tools</button>
+  </div>
+
+  <div id="main-shell">
+    <header id="global-status">
+      <div class="global-status-bar">
+        <div class="pill-row">
+          <span class="pill" id="pill-relay">Relay: offline</span>
+          <span class="pill" id="pill-obs">OBS: offline</span>
+          <span class="pill" id="pill-chat">Chat: offline</span>
+          <span class="pill" id="mobile-pill">Mobile: none</span>
+        </div>
+        <div id="corner-logo" class="corner-logo swift-brand-logo" aria-hidden="true"></div>
+      </div>
+    </header>
+
+    <div id="page-viewport">
+      <div id="pc-cube-track">
+      <!-- Home -->
+      <div id="connect-screen" class="app-page panel-active">
+        <div id="logo-container">
+          <div id="swift-logo" class="swift-brand-logo" aria-hidden="true"></div>
+        </div>
+
+        <div id="setup-checklist-host"></div>
+        <div id="relay-health" class="relay-health" hidden>
+          <p id="relay-health-text">Checking relay…</p>
+          <div class="relay-health-row">
+            <button type="button" id="relay-retry-btn" class="tool-btn subtle">Retry relay</button>
+            <button type="button" id="copy-diagnostics-btn" class="tool-btn subtle">Copy diagnostics</button>
+          </div>
+        </div>
+        <p id="version-banner" class="version-banner" hidden></p>
+
+        <div class="obs-field-row">
+          <label class="obs-field-label" for="ip">OBS IP</label>
+          <div class="obs-field-controls">
+            <input id="ip" type="text" autocomplete="off" spellcheck="false" placeholder="127.0.0.1 for OBS on this PC">
+            <button type="button" class="grab-obs-btn" data-obs-field="host">Grab from OBS</button>
+          </div>
+        </div>
+        <div class="obs-field-row">
+          <label class="obs-field-label" for="port">Port</label>
+          <div class="obs-field-controls">
+            <input id="port" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="4455">
+            <button type="button" class="grab-obs-btn" data-obs-field="port">Grab from OBS</button>
+          </div>
+        </div>
+        <div class="obs-field-row">
+          <label class="obs-field-label" for="password">Password</label>
+          <div class="obs-field-controls">
+            <input id="password" type="password" autocomplete="off" spellcheck="false" placeholder="WebSocket password">
+            <button type="button" class="grab-obs-btn" data-obs-field="password">Grab from OBS</button>
+          </div>
+        </div>
+        <p class="input-hint">Auto-loads from OBS on launch — use Grab from OBS to refresh after moving networks</p>
+        <button type="button" id="connect-btn">Connect</button>
+        <button type="button" id="reconnect-btn">Reconnect</button>
+        <div id="status"></div>
+        <div id="obs-info"></div>
+
+        <div class="pairing-box" id="pairing-box">
+          <h3>Pair Mobile</h3>
+          <p>Scan the QR once — it stays the same until you tap New Code</p>
+          <img id="pairing-qr" alt="Pairing QR code" />
+          <div id="pairing-code">------</div>
+          <div id="pairing-url">Waiting for relay…</div>
+          <button type="button" id="regenerate-pairing-btn" class="tool-btn subtle">New Code</button>
+        </div>
+
+        <div class="pc-mobile-promo" id="pc-mobile-promo">
+          <h3>Chat on your phone — no PC pairing</h3>
+          <p>Read and send Twitch, Kick, YouTube, and TikTok chat from your phone while you stream. Share one link — each phone gets its own private room.</p>
+          <div class="pc-mobile-promo-actions">
+            <a class="promo-primary" id="pc-chat-only-link" href="https://ej-swift.github.io/SwiftSync1/" target="_blank" rel="noopener">Open mobile site</a>
+            <a class="promo-secondary" id="pc-chat-only-direct" href="https://swiftsync-relay.fly.dev/mobile/?mode=chat" target="_blank" rel="noopener">Chat only link</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scenes -->
+      <div id="scenes" class="app-page tab-page">
+        <h2 class="panel-title">Scenes</h2>
+        <p class="panel-subtitle" id="canvas-hint">Program scene — show or hide sources on the main canvas</p>
+
+        <div id="canvas-preview" class="canvas-preview">
+          <img id="canvas-preview-img" alt="Live program preview">
+          <span class="canvas-preview-placeholder">Connect to OBS on the Home tab to see live preview</span>
+        </div>
+
+        <div id="canvas-diagnostic" class="canvas-diagnostic" style="display:none">
+          <span class="canvas-diagnostic-label">Canvas:</span>
+          <span id="canvas-diagnostic-text">—</span>
+        </div>
+
+        <details id="vertical-mapping-section" class="vertical-mapping" style="display:none">
+          <summary>Vertical scene mapping (override auto-detection)</summary>
+          <p class="vertical-mapping-hint">
+            SwiftSync probes vertical scenes by name. If your vertical scenes have unusual names
+            (e.g. "Scene 1"), set them manually here. Leave blank to use auto-detection.
+          </p>
+          <div id="vertical-mapping-list" class="vertical-mapping-list"></div>
+          <div class="vertical-mapping-actions">
+            <button type="button" id="vertical-mapping-save" class="tool-btn primary">Save mapping</button>
+            <button type="button" id="vertical-mapping-clear" class="tool-btn subtle">Clear all</button>
+          </div>
+        </details>
+
+        <div class="panel-toolbar">
+          <button type="button" id="preview-toggle-btn" class="tool-btn subtle">Preview: On</button>
+          <button type="button" id="refresh-scenes-btn" class="tool-btn subtle">Refresh</button>
+        </div>
+        <div id="scene-list" class="scene-grid-pc"></div>
+
+        <div id="scene-context" class="tab-context scenes-sources-stack">
+          <p id="linked-scenes-header" class="tab-context-header">Select a scene above</p>
+          <div id="linked-sources-panel" class="linked-columns single"></div>
+          <p class="empty-hint" id="scene-sources-empty" style="display:none">No visual sources in this scene.</p>
+        </div>
+
+        <div id="scene-audio-section" class="scene-audio-section" style="display:none">
+          <p class="scene-audio-section-header">Scene audio (this scene pair only)</p>
+          <p class="scene-audio-section-hint">Main = sources in the horizontal scene. Vertical = SE.Live copies (e.g. meV 1 ↔ same mic as Main “me”). Global Audio tab lists all inputs.</p>
+          <div id="scene-page-audio-list" class="scene-audio-groups"></div>
+        </div>
+      </div>
+
+      <!-- Audio -->
+      <div id="audio-panel" class="app-page tab-page">
+        <h2 class="panel-title">Audio</h2>
+        <p class="panel-subtitle">All OBS audio inputs — volume and mute</p>
+        <div class="panel-toolbar">
+          <button type="button" id="refresh-audio-btn" class="tool-btn subtle">Refresh</button>
+        </div>
+        <div id="global-audio-list" class="source-rows"></div>
+      </div>
+
+      <!-- Chat -->
+      <div id="chat-panel" class="app-page tab-page chat-panel">
+        <h2 class="panel-title">Stream Chat</h2>
+        <p class="panel-subtitle">Sign in on PC via browser — mobile reads chat without logging in</p>
+        <div class="chat-dock-bar" id="chat-dock-bar">
+          <h3>Put multichat inside OBS</h3>
+          <p class="chat-dock-note" id="chat-dock-note">
+            <strong>Same URL for every streamer.</strong> It is not a personal link — <code>127.0.0.1</code> means
+            <em>this PC only</em>. OBS loads chat from SwiftSync running on the same computer. No pairing code needed.
+            If your relay uses another port, the URL below updates automatically.
+          </p>
+          <p class="chat-dock-prereq">
+            <span id="chat-dock-prereq-app">① SwiftSync PC app open</span>
+            <span id="chat-dock-prereq-chat">② Chat connected (Connect above)</span>
+          </p>
+          <ol class="chat-dock-steps" aria-label="OBS browser dock setup">
+            <li>Open <strong>OBS Studio</strong> on this PC (same machine as SwiftSync).</li>
+            <li>Menu: <strong>View → Docks → Custom Browser Docks…</strong></li>
+            <li>Dock name: <strong>SwiftSync Chat</strong> (any name is fine).</li>
+            <li>Paste this URL exactly, then click <strong>Apply</strong>:</li>
+          </ol>
+          <div class="chat-dock-url-row">
+            <code id="chat-dock-url">http://127.0.0.1:4000/dock/chat.html</code>
+            <button type="button" id="chat-dock-copy-btn" class="tool-btn subtle" title="Right-click to copy full setup steps">Copy URL</button>
+          </div>
+          <p class="chat-dock-steps" style="list-style:none;padding-left:0;margin-top:6px;font-size:10px;color:#666;">
+            Right-click <strong>Copy URL</strong> to copy all steps for Discord or notes.
+          </p>
+          <p class="chat-dock-steps" style="list-style:none;padding-left:0;margin-top:8px;">
+            The dock appears as a panel inside OBS (resize by dragging edges). Use <strong>Refresh cache of current page</strong>
+            in the dock’s ⋮ menu if chat stays on “Connecting…”.
+          </p>
+          <div class="chat-dock-actions">
+            <button type="button" id="chat-dock-test-btn" class="tool-btn subtle">Test in browser</button>
+            <button type="button" id="chat-popout-btn" class="tool-btn subtle">Pop-out (always on top)</button>
+          </div>
+        </div>
+        <details class="chat-oauth-setup" id="chat-oauth-setup">
+          <summary>OAuth app setup (advanced / self-hosted only)</summary>
+          <p class="chat-oauth-redirect">
+            Redirect URI — copy into each developer portal:
+            <code id="chat-oauth-redirect-uri">http://localhost:8877/oauth/callback</code>
+          </p>
+          <div class="chat-oauth-fields">
+            <label for="oauth-twitch-client-id">Twitch Client ID</label>
+            <input id="oauth-twitch-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="Twitch Client ID">
+            <label for="oauth-twitch-client-secret">Twitch Client Secret</label>
+            <input id="oauth-twitch-client-secret" type="password" autocomplete="off" spellcheck="false" placeholder="Twitch Client Secret">
+            <label for="oauth-kick-client-id">Kick Client ID</label>
+            <input id="oauth-kick-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="Kick Client ID">
+            <label for="oauth-kick-client-secret">Kick Client Secret</label>
+            <input id="oauth-kick-client-secret" type="password" autocomplete="off" spellcheck="false" placeholder="Kick Client Secret">
+            <label for="oauth-youtube-client-id">YouTube (Google) Client ID</label>
+            <input id="oauth-youtube-client-id" type="text" autocomplete="off" spellcheck="false" placeholder="Google OAuth Client ID">
+            <label for="oauth-youtube-client-secret">YouTube (Google) Client Secret</label>
+            <input id="oauth-youtube-client-secret" type="password" autocomplete="off" spellcheck="false" placeholder="Google OAuth Client Secret">
+            <label for="oauth-tiktok-client-key">TikTok Client Key</label>
+            <input id="oauth-tiktok-client-key" type="text" autocomplete="off" spellcheck="false" placeholder="TikTok Client Key">
+            <label for="oauth-tiktok-client-secret">TikTok Client Secret</label>
+            <input id="oauth-tiktok-client-secret" type="password" autocomplete="off" spellcheck="false" placeholder="TikTok Client Secret">
+          </div>
+          <p class="chat-oauth-hint">
+            <strong>Twitch</strong> requires both Client ID <em>and</em> Client Secret from the Twitch Dev Console.<br>
+            <strong>YouTube</strong>: after saving credentials, enable the <em>YouTube Data API v3</em> in Google Cloud Console → APIs &amp; Services → Library.<br>
+            TikTok live chat uses SwiftSync's relay — sign in with TikTok below, then Connect while you are LIVE.
+          </p>
+          <div class="chat-oauth-actions">
+            <button type="button" id="oauth-save-btn" class="tool-btn subtle">Save OAuth credentials</button>
+            <button type="button" id="oauth-open-folder-btn" class="tool-btn subtle">Open config folder</button>
+          </div>
+          <div class="chat-oauth-portals">
+            <button type="button" class="chat-oauth-portal-link" data-url="https://dev.twitch.tv/console/apps">Twitch Dev Console</button>
+            <button type="button" class="chat-oauth-portal-link" data-url="https://kick.com/settings/developer">Kick Developer</button>
+            <button type="button" class="chat-oauth-portal-link" data-url="https://console.cloud.google.com/apis/credentials">Google Cloud Console</button>
+            <button type="button" class="chat-oauth-portal-link" data-url="https://developers.tiktok.com/">TikTok Developers</button>
+          </div>
+        </details>
+        <p class="chat-signin-feedback" id="chat-signin-feedback" role="status"></p>
+        <div class="chat-setup-grid">
+          <div class="chat-platform-block" data-platform="twitch">
+            <label class="chat-platform-toggle">
+              <input type="checkbox" id="chat-enable-twitch" class="chat-enable-cb">
+              <span class="chat-platform-badge twitch">Twitch</span>
+            </label>
+            <div class="chat-auth-row">
+              <button type="button" class="chat-login-btn" data-oauth="twitch">Sign in with Browser</button>
+              <button type="button" class="chat-logout-btn" data-oauth="twitch" hidden>Disconnect</button>
+            </div>
+            <p class="chat-account-status" id="chat-account-twitch">Not signed in</p>
+            <input id="chat-twitch-channel" type="text" autocomplete="off" spellcheck="false" placeholder="channel (auto-filled after sign-in)" readonly>
+            <details class="chat-oauth-details">
+              <summary>Advanced — manual token</summary>
+              <input id="chat-twitch-username" type="text" autocomplete="off" spellcheck="false" placeholder="username">
+              <input id="chat-twitch-oauth" type="password" autocomplete="off" spellcheck="false" placeholder="oauth token">
+            </details>
+          </div>
+          <div class="chat-platform-block" data-platform="kick">
+            <label class="chat-platform-toggle">
+              <input type="checkbox" id="chat-enable-kick" class="chat-enable-cb">
+              <span class="chat-platform-badge kick">Kick</span>
+            </label>
+            <div class="chat-auth-row">
+              <button type="button" class="chat-login-btn" data-oauth="kick">Sign in with Browser</button>
+              <button type="button" class="chat-logout-btn" data-oauth="kick" hidden>Disconnect</button>
+            </div>
+            <p class="chat-account-status" id="chat-account-kick">Not signed in</p>
+            <input id="chat-kick-channel" type="text" autocomplete="off" spellcheck="false" placeholder="yourname or kick.com/yourname (auto-filled after sign-in)">
+            <p class="chat-hint">Only needed if sign-in didn’t fill this — use the name from your Kick URL, not your display name.</p>
+          </div>
+          <div class="chat-platform-block" data-platform="youtube">
+            <label class="chat-platform-toggle">
+              <input type="checkbox" id="chat-enable-youtube" class="chat-enable-cb">
+              <span class="chat-platform-badge youtube">YouTube</span>
+            </label>
+            <div class="chat-auth-row">
+              <button type="button" class="chat-login-btn" data-oauth="youtube">Sign in with Google</button>
+              <button type="button" class="chat-logout-btn" data-oauth="youtube" hidden>Disconnect</button>
+            </div>
+            <p class="chat-account-status" id="chat-account-youtube">Not signed in</p>
+            <input id="chat-youtube-channel-id" type="text" autocomplete="off" spellcheck="false" placeholder="channel ID (auto-filled)" readonly>
+            <details class="chat-oauth-details">
+              <summary>Advanced — API key fallback</summary>
+              <input id="chat-youtube-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="YouTube Data API key">
+            </details>
+          </div>
+          <div class="chat-platform-block" data-platform="tiktok">
+            <label class="chat-platform-toggle">
+              <input type="checkbox" id="chat-enable-tiktok" class="chat-enable-cb">
+              <span class="chat-platform-badge tiktok">TikTok</span>
+            </label>
+            <div class="chat-auth-row">
+              <button type="button" class="chat-login-btn" data-oauth="tiktok">Sign in with TikTok</button>
+              <button type="button" class="chat-logout-btn" data-oauth="tiktok" hidden>Disconnect</button>
+            </div>
+            <p class="chat-account-status" id="chat-account-tiktok">Not signed in</p>
+            <input id="chat-tiktok-username" type="text" autocomplete="off" spellcheck="false" placeholder="your_tiktok_username (no @ needed)">
+            <details class="chat-oauth-details">
+              <summary>Advanced — own EulerStream key</summary>
+              <input id="chat-tiktok-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="EulerStream API key (optional fallback)">
+              <p class="chat-hint">Only needed if SwiftSync relay TikTok chat is unavailable. Get a key at eulerstream.com.</p>
+            </details>
+            <p class="chat-hint">Type your TikTok username above (or use Sign in when OAuth is approved). Enable TikTok, Save config, go LIVE, then Connect.</p>
+          </div>
+        </div>
+        <div class="chat-setup-actions">
+          <button type="button" id="chat-save-config-btn" class="tool-btn subtle">Save config</button>
+          <button type="button" id="chat-connect-btn" class="tool-btn subtle">Connect</button>
+        </div>
+        <p class="chat-status" id="chat-status-line">Enable platforms and connect.</p>
+        <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
+        <div class="chat-compose">
+          <select id="chat-send-platform" class="chat-send-platform" aria-label="Send to platform"></select>
+          <input id="chat-send-input" type="text" autocomplete="off" maxlength="500" placeholder="Send message…" disabled>
+          <button type="button" id="chat-send-btn" class="tool-btn subtle" disabled>Send</button>
+        </div>
+      </div>
+
+      <!-- Tools -->
+      <div id="tools-panel" class="app-page tab-page">
+        <h2 class="panel-title">Tools</h2>
+        <p class="panel-subtitle">Stream, record, replay buffer &amp; studio controls</p>
+        <div class="panel-toolbar">
+          <button type="button" id="refresh-tools-btn" class="tool-btn subtle">Refresh</button>
+        </div>
+        <div id="tools-list" class="tab-grid">
+          <div class="tab-card tool-status-card">
+            <span>Stream</span>
+            <span class="tool-state" id="state-stream">offline</span>
+          </div>
+          <div class="tab-card tool-status-card">
+            <span>Recording</span>
+            <span class="tool-state" id="state-record">off</span>
+          </div>
+          <div class="tab-card tool-status-card">
+            <span>Replay</span>
+            <span class="tool-state" id="state-replay">off</span>
+          </div>
+          <div class="tab-card tool-status-card">
+            <span>Virtual Cam</span>
+            <span class="tool-state" id="state-vcam">off</span>
+          </div>
+          <div class="tab-card tool-status-card">
+            <span>Studio</span>
+            <span class="tool-state" id="state-studio">off</span>
+          </div>
+        </div>
+
+        <div id="tools-context" class="tab-context">
+          <p class="tab-context-header">Output controls</p>
+          <div class="tab-context-pane">
+            <div class="tool-control-section">
+              <span class="source-section-label">Stream</span>
+              <button type="button" id="stream-toggle-btn" class="tool-btn subtle">Toggle Stream</button>
+            </div>
+            <div class="tool-control-section">
+              <span class="source-section-label">Recording</span>
+              <button type="button" id="record-toggle-btn" class="tool-btn subtle">Toggle Record</button>
+              <button type="button" id="record-pause-btn" class="tool-btn subtle">Pause / Resume</button>
+            </div>
+            <div class="tool-control-section">
+              <span class="source-section-label">Replay buffer</span>
+              <button type="button" id="replay-toggle-btn" class="tool-btn subtle">Toggle Replay Buffer</button>
+              <button type="button" id="replay-save-btn" class="tool-btn subtle">Save Replay</button>
+            </div>
+            <div class="tool-control-section">
+              <span class="source-section-label">Virtual camera</span>
+              <button type="button" id="vcam-toggle-btn" class="tool-btn subtle">Toggle Virtual Cam</button>
+            </div>
+            <div class="tool-control-section">
+              <span class="source-section-label">Studio mode</span>
+              <button type="button" id="studio-toggle-btn" class="tool-btn subtle">Toggle Studio Mode</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="shared/swiftsync-support.js?v=3"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

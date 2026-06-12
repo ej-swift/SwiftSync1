@@ -1,0 +1,12 @@
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: cloud-relay/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      PUBLIC_URL: http://localhost:8080
+      ADMIN_TOKEN: dev-admin-token-change-me
+    restart: unless-stopped

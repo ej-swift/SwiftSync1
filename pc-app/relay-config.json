@@ -1,0 +1,4 @@
+{
+  "cloudRelayUrl": "wss://swiftsync-relay.fly.dev",
+  "cloudPublicUrl": "https://swiftsync-relay.fly.dev"
+}

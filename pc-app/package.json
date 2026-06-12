@@ -1,0 +1,109 @@
+{
+  "name": "swiftsync",
+  "version": "1.0.32",
+  "description": "SwiftSync PC controller for OBS",
+  "main": "main.js",
+  "author": "SwiftSync",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+    "restart": "powershell -Command \"Get-NetTCPConnection -LocalPort 4000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\" && electron .",
+    "relay": "node server.js",
+    "icons": "powershell -ExecutionPolicy Bypass -File scripts/export-icon-pngs.ps1 && node scripts/build-icons.js",
+    "fix-icon": "node scripts/fix-installed-icon.js",
+    "predist": "node scripts/clean-dist.js && node scripts/predist.js",
+    "postdist": "node scripts/postdist.js",
+    "icons": "powershell -ExecutionPolicy Bypass -File scripts/export-icon-pngs.ps1 && node scripts/build-icons.js",
+    "dist": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable",
+    "dist:mac": "electron-builder --mac dmg zip",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@eulerstream/euler-api-sdk": "^0.3.0",
+    "obs-websocket-js": "^5.0.3",
+    "qrcode": "^1.5.4",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.swiftsync.pc",
+    "productName": "SwiftSync",
+    "icon": "assets/icon.ico",
+    "afterPack": "scripts/after-pack.js",
+    "directories": {
+      "output": "dist"
+    },
+    "asarUnpack": [
+      "mobile/**/*",
+      "shared/**/*",
+      "dock/**/*",
+      "assets/**/*"
+    ],
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!dist-build/**",
+      "!dist-release/**",
+      "!**/*.zip",
+      "!**/*.7z",
+      "!_file-review-bundle.txt",
+      "!node_modules/.cache/**",
+      "!assets/icon-*.png"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "relay-config.json",
+        "to": "relay-config.json"
+      },
+      {
+        "from": "chat-oauth-apps.json",
+        "to": "chat-oauth-apps.json"
+      },
+      {
+        "from": "chat-oauth-apps.example.json",
+        "to": "chat-oauth-apps.example.json"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "SwiftSync",
+      "include": "scripts/installer.nsh",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "assets/Copilot_20260522_174446.png",
+      "category": "public.app-category.utilities",
+      "artifactName": "SwiftSync-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "SwiftSync"
+    }
+  }
+}

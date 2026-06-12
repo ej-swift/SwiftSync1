@@ -1,0 +1,10 @@
+node_modules/
+pc-app/dist/
+pc-app/node_modules/
+pc-app/chat-oauth-apps.json
+pc-app/chat-config.json
+pc-app/pairing-code.txt
+cloud-relay/node_modules/
+cloud-relay/.fly-deploy-token
+cloud-relay/.env
+*.log

@@ -32,14 +32,16 @@
       <img class="page-logo" src="../icon-192.png" alt="SwiftSync" width="72" height="72">
       <p class="badge">SwiftSync</p>
       <h1>Privacy Policy</h1>
-      <p class="muted">Last updated: May 23, 2026</p>
+      <p class="muted">Last updated: May 26, 2026</p>
     </header>
 
     <section>
       <h2>Overview</h2>
       <p>
         SwiftSync is a desktop application that runs on your computer. We designed it so your streaming
-        credentials and chat data stay on your PC unless you choose to use optional cloud relay features.
+        credentials stay on your PC when you use the desktop app locally. If you use
+        <strong>chat-only on your phone</strong>, sign-in tokens for that session may be stored on the
+        optional cloud relay server (see below).
       </p>
     </section>
 
@@ -77,8 +79,13 @@
       <h2>Cloud relay (optional)</h2>
       <p>
         If you enable the optional cloud relay, pairing and command traffic may pass through a relay
-        server you configure. Chat content may be cached briefly for mobile access. You control whether
-        this feature is used.
+        server you configure. Chat content may be cached briefly for mobile access.
+      </p>
+      <p>
+        If you use <strong>chat-only mode</strong> on your phone (no PC), each phone gets its own private
+        pairing room on the cloud relay. OAuth tokens you approve for Twitch, Kick, YouTube, or TikTok are
+        stored on that relay server only for your room, so chat works while the mobile page is open.
+        SwiftSync does not operate a central user account database.
       </p>
     </section>
 

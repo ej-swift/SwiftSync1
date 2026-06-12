@@ -1,0 +1,18 @@
+{
+  "redirectUri": "http://localhost:8877/oauth/callback",
+  "twitch": {
+    "clientId": "5vi7agfxpq4f7408fzvozlezmb1vez"
+  },
+  "kick": {
+    "clientId": "01KSE9VA26YYAHMNM7KT6MTV3H",
+    "clientSecret": ""
+  },
+  "youtube": {
+    "clientId": "958400999215-s10cprk59bd5rhs9rft1vgima0bmuo9f.apps.googleusercontent.com",
+    "clientSecret": ""
+  },
+  "tiktok": {
+    "clientKey": "awcd8ofzcoeagka1",
+    "clientSecret": ""
+  }
+}
