@@ -1,6 +1,6 @@
 # SwiftSync releases
 
-Current version: **1.0.32**
+Current version: **1.0.34**
 
 ## Windows (from any PC)
 
@@ -12,9 +12,9 @@ npm install
 npm run dist
 ```
 
-Installer: `dist\SwiftSync Setup 1.0.32.exe`
+Installer: `dist\SwiftSync Setup 1.0.34.exe`
 
-Portable: `npm run dist:portable` → `dist\SwiftSync 1.0.32.exe`
+Portable: `npm run dist:portable` → `dist\SwiftSync 1.0.34.exe`
 
 ### Code signing (optional)
 
