@@ -170,6 +170,41 @@ img { max-width: 100%; height: auto; }
 @media (max-width: 900px) {
   .hero-grid { grid-template-columns: 1fr; }
   .site-nav .nav-muted { display: none; }
+  .site-nav .nav-mobile,
+  .site-nav .btn-primary { display: inline-flex !important; }
+}
+
+.site-nav .nav-mobile {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.mobile-open-bar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-open-bar {
+    display: flex;
+    gap: 0.5rem;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    padding: 0.65rem 0.85rem calc(0.65rem + env(safe-area-inset-bottom));
+    background: rgba(15, 17, 23, 0.96);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+  }
+
+  .mobile-open-bar .btn {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.88rem;
+  }
+
+  body { padding-bottom: 4.5rem; }
 }
 
 .badge {
