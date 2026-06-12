@@ -260,6 +260,40 @@
             <li>Phone or tablet with a modern browser</li>
           </ul>
         </div>
+        <div class="info-panel windows-download-help" id="windows-blocked">
+          <h3>Windows blocked the download?</h3>
+          <p class="muted">
+            SwiftSync is not code-signed yet, so Chrome, Edge, and Windows SmartScreen may warn
+            that the file is uncommon or from an unknown publisher. That is normal for indie apps —
+            it does not mean the file is a virus if you download from this site or GitHub.
+          </p>
+          <ol class="req-list">
+            <li>
+              <strong>Browser blocked the download:</strong> open your browser’s
+              <strong>Downloads</strong> list → find <code>SwiftSync.Setup…exe</code> →
+              <strong>Keep</strong> / <strong>Keep anyway</strong> / <strong>Recover</strong>.
+            </li>
+            <li>
+              <strong>Or use GitHub directly:</strong>
+              <a href="https://github.com/ej-swift/SwiftSync1/releases/latest" rel="noopener">Releases page</a>
+              → download the <code>.exe</code> asset.
+            </li>
+            <li>
+              <strong>SmartScreen when you run it:</strong> click <strong>More info</strong> →
+              <strong>Run anyway</strong>. Optional: right-click the file →
+              <strong>Properties</strong> → check <strong>Unblock</strong> → Apply.
+            </li>
+            <li>
+              <strong>Still stuck?</strong> Copy the installer from another PC or from your build folder
+              onto a USB drive — installing from a folder is fine if you trust the source.
+            </li>
+          </ol>
+          <p class="muted" style="margin-top: 0.75rem;">
+            To remove these warnings permanently, the developer must purchase a Windows code signing
+            certificate (~$200–400/year). Until then, <strong>More info → Run anyway</strong> is the
+            expected install path.
+          </p>
+        </div>
       </div>
     </div>
   </section>
@@ -278,6 +312,17 @@
             <a href="https://swiftsync-relay.fly.dev/mobile/?mode=chat" rel="noopener">swiftsync-relay.fly.dev/mobile/?mode=chat</a>
             — no PC required for unified Twitch, Kick, YouTube, and TikTok chat.
             Full scene and audio control still pairs with SwiftSync on your streaming PC.
+          </p>
+        </details>
+        <details class="faq-item">
+          <summary>Windows blocked my download or says “Publisher: Unknown”</summary>
+          <p>
+            SwiftSync is unsigned, so SmartScreen and your browser may block or warn about the
+            installer. Download only from
+            <a href="https://github.com/ej-swift/SwiftSync1/releases" rel="noopener">GitHub Releases</a>
+            or this site. In Downloads, choose <strong>Keep anyway</strong>. When installing, choose
+            <strong>More info → Run anyway</strong>. See the
+            <a href="#windows-blocked">download help section</a> for step-by-step instructions.
           </p>
         </details>
         <details class="faq-item">

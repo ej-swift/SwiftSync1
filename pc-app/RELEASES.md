@@ -1,6 +1,6 @@
 # SwiftSync releases
 
-Current version: **1.0.33**
+Current version: **1.0.32**
 
 ## Windows (from any PC)
 
@@ -12,9 +12,9 @@ npm install
 npm run dist
 ```
 
-Installer: `dist\SwiftSync Setup 1.0.33.exe`
+Installer: `dist\SwiftSync Setup 1.0.32.exe`
 
-Portable: `npm run dist:portable` → `dist\SwiftSync 1.0.33.exe`
+Portable: `npm run dist:portable` → `dist\SwiftSync 1.0.32.exe`
 
 ### Code signing (optional)
 
@@ -36,14 +36,14 @@ npm install
 npm run dist:mac
 ```
 
-Outputs: `dist/SwiftSync-1.0.33-arm64.dmg`, `dist/SwiftSync-1.0.33-x64.dmg`
+Outputs: `dist/SwiftSync-1.0.32-arm64.dmg`, `dist/SwiftSync-1.0.32-x64.dmg`
 
 First open: right-click app → **Open** (unsigned builds).
 
 ## Publish to GitHub Releases
 
 1. Build installer (see above)
-2. Tag: `git tag v1.0.33 && git push origin v1.0.33`
+2. Tag: `git tag v1.0.32 && git push origin v1.0.32`
 3. Create release and upload `dist/*.exe` (and `.dmg` if built)
 
 The PC app checks **ej-swift/SwiftSync1** for update banners automatically. Override at build time:

@@ -77,6 +77,70 @@
     );
   }
 
+  /** Author name colors by source platform (matches platform badges). */
+  const CHAT_PLATFORM_COLORS = {
+    twitch: '#bf94ff',
+    kick: '#53fc18',
+    youtube: '#ff5555',
+    tiktok: '#69c9d0'
+  };
+
+  function getChatPlatformColor(platform) {
+    const key = String(platform || '').toLowerCase();
+    return CHAT_PLATFORM_COLORS[key] || '#9eb8ff';
+  }
+
+  /**
+   * Build one chat row: meta line (badge + colored author), body line indented below.
+   */
+  function appendChatMessageRow(container, msg, opts = {}) {
+    if (!container || !msg) return null;
+    const platformLabels = opts.platformLabels || {};
+    const join = isJoinChatMessage(msg);
+    const authorName = formatChatAuthor(msg);
+    const platformColor = getChatPlatformColor(msg.platform);
+
+    const row = document.createElement('div');
+    row.className = 'chat-msg' + (join ? ' chat-msg-join' : '');
+
+    const meta = document.createElement('div');
+    meta.className = 'chat-msg-meta';
+
+    if (msg.platform) {
+      const badge = document.createElement('span');
+      badge.className = `chat-platform-badge ${msg.platform}`;
+      badge.textContent = platformLabels[msg.platform] || String(msg.platform);
+      meta.appendChild(badge);
+    }
+
+    if (join) {
+      const joinAuthor = document.createElement('span');
+      joinAuthor.className = 'chat-msg-author chat-msg-author-join';
+      joinAuthor.textContent = authorName;
+      joinAuthor.style.color = platformColor;
+      meta.appendChild(joinAuthor);
+
+      const body = document.createElement('div');
+      body.className = 'chat-msg-body chat-msg-join-text';
+      body.textContent = msg.text || `${authorName} joined`;
+      row.append(meta, body);
+    } else {
+      const author = document.createElement('span');
+      author.className = 'chat-msg-author';
+      author.textContent = authorName;
+      author.style.color = platformColor;
+      meta.appendChild(author);
+
+      const body = document.createElement('div');
+      body.className = 'chat-msg-body';
+      body.textContent = msg.text || '';
+      row.append(meta, body);
+    }
+
+    container.appendChild(row);
+    return row;
+  }
+
   function detectInAppBrowser() {
     if (typeof navigator === 'undefined') return { inApp: false, label: '' };
     const ua = navigator.userAgent || '';
@@ -254,6 +318,9 @@
     detectInAppBrowser,
     formatChatAuthor,
     isJoinChatMessage,
+    CHAT_PLATFORM_COLORS,
+    getChatPlatformColor,
+    appendChatMessageRow,
     renderSetupChecklist,
     renderChatOnlySetupChecklist,
     checkForUpdates,

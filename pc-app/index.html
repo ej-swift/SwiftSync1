@@ -1703,13 +1703,30 @@
 
     .chat-msg {
       font-size: 14px;
-      line-height: 1.4;
+      line-height: 1.35;
+      word-break: break-word;
+      text-align: left;
+      margin-bottom: 8px;
+    }
+
+    .chat-msg-meta {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px 6px;
+      line-height: 1.25;
+    }
+
+    .chat-msg-body {
+      margin: 2px 0 0;
+      padding-left: 2.75em;
+      color: var(--text-primary);
       word-break: break-word;
     }
 
     .chat-msg-author {
       font-weight: 700;
-      margin-right: 6px;
+      margin: 0;
     }
 
     .chat-msg-join {
@@ -1718,8 +1735,10 @@
     }
 
     .chat-msg-join-text,
-    .chat-msg.chat-msg-join .chat-msg-text {
+    .chat-msg.chat-msg-join .chat-msg-text,
+    .chat-msg.chat-msg-join .chat-msg-body {
       color: #9eb8a8;
+      font-style: italic;
     }
 
     .chat-compose {
@@ -2290,7 +2309,7 @@
     </div>
   </div>
 
-  <script src="shared/swiftsync-support.js?v=4"></script>
+  <script src="shared/swiftsync-support.js?v=6"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

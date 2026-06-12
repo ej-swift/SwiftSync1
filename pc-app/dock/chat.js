@@ -10,6 +10,13 @@
   const port = params.get('port') || location.port || '4000';
   if (params.get('compact') === '1') document.body.classList.add('dock-compact');
 
+  const PLATFORM_LABELS = {
+    twitch: 'Twitch',
+    kick: 'Kick',
+    youtube: 'YouTube',
+    tiktok: 'TikTok'
+  };
+
   document.querySelectorAll('.dock-toolbar button[data-font]').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.body.classList.remove('dock-compact', 'dock-large');
@@ -30,34 +37,15 @@
   let canSend = false;
   let sendPlatforms = [];
 
-  function authorOf(m) {
-    if (!m || typeof m !== 'object') return 'unknown';
-    if (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.formatChatAuthor) {
-      return SwiftSyncSupport.formatChatAuthor(m);
+  function appendRow(parent, msg) {
+    if (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.appendChatMessageRow) {
+      SwiftSyncSupport.appendChatMessageRow(parent, msg, { platformLabels: PLATFORM_LABELS });
+      return;
     }
-    const user = m.user;
-    if (user && typeof user === 'object') {
-      const nested =
-        user.username || user.displayName || user.display_name || user.name || user.slug;
-      if (nested && String(nested).trim()) return String(nested).trim();
-    }
-    const name = m.author || m.displayName || m.username || m.user;
-    const s = String(name || '').trim();
-    return s || 'unknown';
-  }
-
-  function isJoin(m) {
-    if (!m || typeof m !== 'object') return false;
-    if (m.kind === 'join') return true;
-    if (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.isJoinChatMessage) {
-      return SwiftSyncSupport.isJoinChatMessage(m);
-    }
-    const t = String(m.text || '');
-    return (
-      /\bjoined (the )?(chat|channel|stream|live)\b/i.test(t) ||
-      /\bhas joined\b/i.test(t) ||
-      /\bwelcome\b.*\bto the stream\b/i.test(t)
-    );
+    const row = document.createElement('div');
+    row.className = 'chat-msg';
+    row.textContent = `${msg.author || 'unknown'}: ${msg.text || ''}`;
+    parent.appendChild(row);
   }
 
   function setStatus(text, cls) {
@@ -77,42 +65,11 @@
     helpEl.textContent = text;
   }
 
-  function platformClass(p) {
-    return String(p || '').toLowerCase();
-  }
-
-  function isMod(m) {
-    if (m.isModerator || m.isMod || m.isBroadcaster) return true;
-    const badges = m.badges || m.userBadges || [];
-    return Array.isArray(badges) && badges.some((b) => /mod|moderator|broadcaster/i.test(String(b)));
-  }
-
   function renderMessages() {
     if (!messagesEl) return;
     messagesEl.innerHTML = '';
     for (const m of messages.slice(-200)) {
-      const row = document.createElement('div');
-      const join = isJoin(m);
-      row.className = 'chat-msg' + (isMod(m) ? ' mod' : '') + (join ? ' chat-msg-join' : '');
-
-      const plat = document.createElement('span');
-      plat.className = 'platform ' + platformClass(m.platform);
-      plat.textContent = m.platform || '?';
-
-      if (join) {
-        const text = document.createElement('span');
-        text.className = 'join-text';
-        text.textContent = m.text || `${authorOf(m)} joined`;
-        row.append(plat, text);
-      } else {
-        const user = document.createElement('span');
-        user.className = 'user';
-        user.textContent = authorOf(m) + ': ';
-        const text = document.createElement('span');
-        text.textContent = m.text || '';
-        row.append(plat, user, text);
-      }
-      messagesEl.appendChild(row);
+      appendRow(messagesEl, m);
     }
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }

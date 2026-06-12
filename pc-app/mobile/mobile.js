@@ -1201,36 +1201,13 @@
   }
 
   function appendChatRow(parent, msg) {
-    const authorOf = (m) =>
-      typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.formatChatAuthor
-        ? SwiftSyncSupport.formatChatAuthor(m)
-        : m.author || m.displayName || m.username || 'unknown';
-    const isJoin =
-      msg.kind === 'join' ||
-      (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.isJoinChatMessage?.(msg));
+    if (typeof SwiftSyncSupport !== 'undefined' && SwiftSyncSupport.appendChatMessageRow) {
+      SwiftSyncSupport.appendChatMessageRow(parent, msg, { platformLabels: CHAT_PLATFORM_LABELS });
+      return;
+    }
     const row = document.createElement('div');
-    row.className = 'chat-msg' + (isJoin ? ' chat-msg-join' : '');
-    if (msg.platform) {
-      const badge = document.createElement('span');
-      badge.className = `chat-platform-badge ${msg.platform}`;
-      badge.textContent = CHAT_PLATFORM_LABELS[msg.platform] || msg.platform;
-      row.appendChild(badge);
-    }
-    if (isJoin) {
-      const text = document.createElement('span');
-      text.className = 'chat-msg-text chat-msg-join-text';
-      text.textContent = msg.text || `${authorOf(msg)} joined`;
-      row.appendChild(text);
-    } else {
-      const author = document.createElement('span');
-      author.className = 'chat-msg-author';
-      author.textContent = `${authorOf(msg)}: `;
-      if (msg.color) author.style.color = msg.color;
-      const text = document.createElement('span');
-      text.className = 'chat-msg-text';
-      text.textContent = msg.text || '';
-      row.append(author, text);
-    }
+    row.className = 'chat-msg';
+    row.textContent = `${msg.author || 'unknown'}: ${msg.text || ''}`;
     parent.appendChild(row);
   }
 

@@ -467,7 +467,7 @@ h3 {
 
 .download-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
   align-items: start;
 }
@@ -489,6 +489,25 @@ h3 {
 }
 
 .req-list li:last-child { border-bottom: 0; }
+
+.windows-download-help ol {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--muted);
+}
+
+.windows-download-help ol li {
+  margin: 0.5rem 0;
+  line-height: 1.45;
+  border-bottom: none;
+  padding: 0;
+  list-style: decimal;
+}
+
+.windows-download-help code {
+  font-size: 0.9em;
+  color: var(--text);
+}
 
 .faq-list { display: grid; gap: 0.75rem; }
 
