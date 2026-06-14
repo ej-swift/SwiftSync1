@@ -337,6 +337,10 @@ function sendLocalRelayEvent(ev) {
 function registerLocalRelayIpc() {
   localRelayClient = createRelayWsClient(sendLocalRelayEvent);
 
+  ipcMain.handle('swiftsync:local-relay-status', () => ({
+    connected: !!localRelayClient?.isOpen?.()
+  }));
+
   ipcMain.handle('swiftsync:local-relay-connect', (_evt, { port, pairingCode }) => {
     const p = Number(port) || relayServer?.port || DEFAULT_PORT;
     localRelayClient.connect(`ws://127.0.0.1:${p}`, pairingCode);

@@ -1,7 +1,9 @@
 const WebSocket = require('ws');
 
 const CONNECT_TIMEOUT_MS = 15000;
-const RECONNECT_MS = 2000;
+const RECONNECT_BASE_MS = 2000;
+const RECONNECT_MAX_MS = 60000;
+const PING_INTERVAL_MS = 25000;
 
 function disposeWebSocket(socket) {
   if (!socket) return;
@@ -23,12 +25,14 @@ function disposeWebSocket(socket) {
 }
 
 /**
- * Cloud relay WebSocket in the main process (Node ws — reliable in Electron).
+ * Cloud/local relay WebSocket in the main process (Node ws — reliable in Electron).
  */
 function createCloudRelayClient(onEvent) {
   let ws = null;
   let reconnectTimer = null;
+  let pingTimer = null;
   let shouldReconnect = false;
+  let reconnectAttempt = 0;
   let lastUrl = '';
   let lastPairingCode = '';
 
@@ -47,19 +51,42 @@ function createCloudRelayClient(onEvent) {
     }
   }
 
+  function clearPing() {
+    if (pingTimer) {
+      clearInterval(pingTimer);
+      pingTimer = null;
+    }
+  }
+
+  function startPing() {
+    clearPing();
+    pingTimer = setInterval(() => {
+      if (ws?.readyState !== WebSocket.OPEN) return;
+      try {
+        ws.ping();
+      } catch (_) {
+        /* ignore */
+      }
+    }, PING_INTERVAL_MS);
+  }
+
   function stop() {
     shouldReconnect = false;
+    reconnectAttempt = 0;
     clearReconnect();
+    clearPing();
     disposeWebSocket(ws);
     ws = null;
   }
 
   function scheduleReconnect() {
     if (!shouldReconnect || reconnectTimer) return;
+    const delay = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempt, RECONNECT_MAX_MS);
+    reconnectAttempt += 1;
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       if (shouldReconnect && lastUrl) connect(lastUrl, lastPairingCode);
-    }, RECONNECT_MS);
+    }, delay);
   }
 
   function isOpen() {
@@ -77,12 +104,14 @@ function createCloudRelayClient(onEvent) {
       shouldReconnect = true;
       if (ws.readyState === WebSocket.OPEN) {
         if (prevCode && nextCode && prevCode !== nextCode) {
+          clearPing();
           disposeWebSocket(ws);
           ws = null;
         } else {
           try {
             ws.send(JSON.stringify({ type: 'role', role: 'pc', pairingCode: lastPairingCode }));
           } catch (_) {}
+          startPing();
           emit({ state: 'open' });
           return;
         }
@@ -92,6 +121,7 @@ function createCloudRelayClient(onEvent) {
       }
     }
 
+    clearPing();
     disposeWebSocket(ws);
     ws = null;
     shouldReconnect = true;
@@ -112,7 +142,13 @@ function createCloudRelayClient(onEvent) {
     socket.on('open', () => {
       clearTimeout(connectTimeout);
       if (ws !== socket) return;
-      socket.send(JSON.stringify({ type: 'role', role: 'pc', pairingCode: lastPairingCode }));
+      reconnectAttempt = 0;
+      try {
+        socket.send(JSON.stringify({ type: 'role', role: 'pc', pairingCode: lastPairingCode }));
+      } catch (err) {
+        emit({ state: 'error', message: err?.message || 'Send failed' });
+      }
+      startPing();
       emit({ state: 'open' });
     });
 
@@ -123,6 +159,7 @@ function createCloudRelayClient(onEvent) {
 
     socket.on('close', (code, reason) => {
       clearTimeout(connectTimeout);
+      clearPing();
       if (ws === socket) ws = null;
       emit({ state: 'close', code, reason: reason?.toString() || '' });
       scheduleReconnect();
@@ -131,11 +168,26 @@ function createCloudRelayClient(onEvent) {
     socket.on('error', (err) => {
       clearTimeout(connectTimeout);
       emit({ state: 'error', message: err?.message || 'WebSocket error' });
+      if (ws === socket && socket.readyState === WebSocket.CONNECTING) {
+        disposeWebSocket(socket);
+        ws = null;
+        scheduleReconnect();
+      }
+    });
+
+    socket.on('pong', () => {
+      /* keepalive ack */
     });
   }
 
   function send(text) {
-    if (ws?.readyState === WebSocket.OPEN) ws.send(text);
+    if (ws?.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(text);
+      } catch (err) {
+        emit({ state: 'error', message: err?.message || 'Send failed' });
+      }
+    }
   }
 
   return { connect, send, stop, isOpen };

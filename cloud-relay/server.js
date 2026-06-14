@@ -1131,6 +1131,7 @@ function attachWebSocketHandlers(wss, relay, port, cloudChat) {
         }
 
         if (data.from === 'pc') {
+          if (data.type === 'relayPing') return;
           relay.cachePcBroadcast(room, msg, data);
           relay.relayPcToMobile(room, msg);
         } else if (data.from === 'mobile') {

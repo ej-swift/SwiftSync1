@@ -940,7 +940,9 @@ const {
   DEFAULT_REDIRECT
 } = require('./chat-oauth-apps');
 const { shell, ipcRenderer } = require('electron');
-const RELAY_RECONNECT_MS = 2000;
+const RELAY_RECONNECT_BASE_MS = 2000;
+const RELAY_RECONNECT_MAX_MS = 60000;
+const RELAY_KEEPALIVE_MS = 25000;
 let relayRuntime = null;
 let relayConnectUrl = '';
 
@@ -1058,8 +1060,10 @@ function updateCanvasVerticalStatus() {
 
 relayRetryBtn?.addEventListener('click', async () => {
   supportDiag('User retry relay');
+  resetRelayReconnectBackoff();
   localRelayIpcReady = false;
   relayCloudIpcReady = false;
+  stopRelayKeepalive();
   ipcRenderer.invoke('swiftsync:local-relay-disconnect').catch(() => {});
   ipcRenderer.invoke('swiftsync:cloud-relay-disconnect').catch(() => {});
   try {
@@ -1306,13 +1310,13 @@ const CHAT_AUTO_DEBOUNCE_MS = 8000;
 const CHAT_KEEPALIVE_MS = 45000;
 
 let relaySocket = null;
-let localRelayBridgeSocket = null;
 let relayReconnectTimer = null;
+let relayReconnectAttempt = 0;
+let relayKeepaliveTimer = null;
 let relayConnectTimeout = null;
 let relayTransport = 'none';
 let relayCloudIpcReady = false;
 let localRelayIpcReady = false;
-let localRelayBridgeOnline = false;
 const RELAY_CONNECT_TIMEOUT_MS = 15000;
 let mobileLinked = false;
 let mobileSyncTimer = null;
@@ -5936,19 +5940,48 @@ function onRelaySocketMessage(raw) {
     return;
   }
 
-  handleRelayMessage(raw);
+  handleRelayMessage(raw).catch((err) => {
+    supportDiag(`Relay command error: ${err?.message || err}`, 'error');
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Relay (mobile ↔ PC)
 // ---------------------------------------------------------------------------
 
+function relayReconnectDelayMs() {
+  const delay = Math.min(RELAY_RECONNECT_BASE_MS * 2 ** relayReconnectAttempt, RELAY_RECONNECT_MAX_MS);
+  relayReconnectAttempt += 1;
+  return delay;
+}
+
+function resetRelayReconnectBackoff() {
+  relayReconnectAttempt = 0;
+}
+
+function startRelayKeepalive() {
+  stopRelayKeepalive();
+  relayKeepaliveTimer = setInterval(() => {
+    if (!isRelayOpen()) return;
+    sendRelayJson({ from: 'pc', type: 'relayPing', ts: Date.now() });
+  }, RELAY_KEEPALIVE_MS);
+}
+
+function stopRelayKeepalive() {
+  if (relayKeepaliveTimer) {
+    clearInterval(relayKeepaliveTimer);
+    relayKeepaliveTimer = null;
+  }
+}
+
 function scheduleRelayReconnect() {
   if (relayReconnectTimer) return;
+  const delay = relayReconnectDelayMs();
+  supportDiag(`Relay reconnect in ${Math.round(delay / 1000)}s`, 'warn');
   relayReconnectTimer = setTimeout(() => {
     relayReconnectTimer = null;
     connectRelay();
-  }, RELAY_RECONNECT_MS);
+  }, delay);
 }
 
 function isRelayOpen() {
@@ -5984,6 +6017,7 @@ function disconnectRendererRelaySocket() {
 function handleLocalRelayEvent(ev) {
   if (ev.state === 'open') {
     clearRelayConnectTimeout();
+    resetRelayReconnectBackoff();
     localRelayIpcReady = true;
     relayOnline = true;
     relayTransport = 'ipc-local';
@@ -5993,6 +6027,7 @@ function handleLocalRelayEvent(ev) {
     refreshSetupChecklist();
     refreshPairingFromHttp().catch(() => {});
     scheduleAutoChatConnect('relay');
+    startRelayKeepalive();
     return;
   }
 
@@ -6003,6 +6038,7 @@ function handleLocalRelayEvent(ev) {
 
   if (ev.state === 'close' || ev.state === 'error' || ev.state === 'timeout') {
     localRelayIpcReady = false;
+    stopRelayKeepalive();
     if (!relayCloudIpcReady) {
       relayOnline = false;
       const rt = refreshRelayRuntime();
@@ -6020,6 +6056,7 @@ function handleCloudRelayEvent(ev) {
 
   if (ev.state === 'open') {
     clearRelayConnectTimeout();
+    resetRelayReconnectBackoff();
     relayCloudIpcReady = true;
     relayOnline = true;
     supportDiag('Cloud relay connected (main process)');
@@ -6031,6 +6068,7 @@ function handleCloudRelayEvent(ev) {
     setPill(pillRelay, localUp ? 'Relay: online' : 'Cloud relay: online', true);
     refreshSetupChecklist();
     scheduleAutoChatConnect('relay');
+    startRelayKeepalive();
     return;
   }
 
@@ -6049,9 +6087,15 @@ function handleCloudRelayEvent(ev) {
         'Cloud relay unreachable — use the LAN QR below if your phone is on the same Wi‑Fi.',
         { show: true }
       );
+      const rt = refreshRelayRuntime();
+      if (rt.useCloud && rt.cloudUrl) {
+        setTimeout(() => connectCloudRelayViaIpc(rt), relayReconnectDelayMs());
+      }
     } else {
       setPill(pillRelay, 'Cloud relay: offline', false);
       updateRelayHealth(describeRelayFailure(rt), { show: true });
+      stopRelayKeepalive();
+      scheduleRelayReconnect();
     }
   }
 }
@@ -6070,8 +6114,15 @@ function fallbackToLocalRelay(rt) {
   }
 }
 
-function connectLocalRelayViaIpc(rt) {
-  if (localRelayIpcReady) return;
+async function connectLocalRelayViaIpc(rt) {
+  try {
+    const st = await ipcRenderer.invoke('swiftsync:local-relay-status');
+    if (st?.connected) {
+      if (!localRelayIpcReady) handleLocalRelayEvent({ state: 'open' });
+      return;
+    }
+  } catch (_) {}
+  localRelayIpcReady = false;
 
   clearRelayConnectTimeout();
   setPill(pillRelay, 'Relay: connecting…', false);
@@ -6098,9 +6149,14 @@ function connectLocalRelayViaIpc(rt) {
     });
 }
 
-function connectCloudRelayViaIpc(rt) {
-  if (relayCloudIpcReady) return;
-
+async function connectCloudRelayViaIpc(rt) {
+  try {
+    const st = await ipcRenderer.invoke('swiftsync:cloud-relay-status');
+    if (st?.connected) {
+      if (!relayCloudIpcReady) handleCloudRelayEvent({ state: 'open' });
+      return;
+    }
+  } catch (_) {}
   relayCloudIpcReady = false;
   const localUp = localRelayIpcReady;
 
@@ -6148,45 +6204,6 @@ function connectCloudRelayViaIpc(rt) {
       supportDiag(`Cloud relay IPC failed: ${err?.message || err}`, 'warn');
       fallbackToLocalRelay(rt);
     });
-}
-
-function connectLocalRelayBridge() {
-  const rt = relayRuntime || refreshRelayRuntime();
-  if (!rt.useCloud || rt.external) return;
-  if (
-    localRelayBridgeSocket?.readyState === WebSocket.OPEN ||
-    localRelayBridgeSocket?.readyState === WebSocket.CONNECTING
-  ) {
-    return;
-  }
-
-  localRelayBridgeSocket = new WebSocket(`ws://127.0.0.1:${getRelayPort()}`);
-  localRelayBridgeSocket.onopen = () => {
-    localRelayBridgeOnline = true;
-    localRelayBridgeSocket.send(
-      JSON.stringify({
-        type: 'role',
-        role: 'pc',
-        pairingCode: getPersistentPairingCode()
-      })
-    );
-    if (!relayCloudIpcReady) {
-      relayOnline = true;
-      setPill(pillRelay, 'Local OK · cloud connecting…', false);
-      updateRelayHealth('Local relay ready — finishing cloud connection…', { show: false });
-      refreshSetupChecklist();
-    }
-  };
-  localRelayBridgeSocket.onmessage = (e) => {
-    if (!relayCloudIpcReady) onRelaySocketMessage(e.data);
-  };
-  localRelayBridgeSocket.onclose = () => {
-    localRelayBridgeSocket = null;
-    localRelayBridgeOnline = false;
-    if (!relayCloudIpcReady) relayOnline = false;
-    setTimeout(connectLocalRelayBridge, RELAY_RECONNECT_MS);
-  };
-  localRelayBridgeSocket.onerror = () => {};
 }
 
 function describeRelayFailure(rt) {
@@ -6298,7 +6315,10 @@ function connectRelay() {
   const canUseLocalWs = !rt.external || rt.attached;
 
   if (canUseLocalWs) {
-    connectLocalRelayViaIpc(rt);
+    connectLocalRelayViaIpc(rt).catch((err) => {
+      supportDiag(`Local relay connect failed: ${err?.message || err}`, 'warn');
+      scheduleRelayReconnect();
+    });
   } else if (!rt.useCloud || !rt.cloudUrl) {
     relayOnline = false;
     setPill(pillRelay, 'Relay: offline', false);
@@ -6308,7 +6328,10 @@ function connectRelay() {
   }
 
   if (rt.useCloud && rt.cloudUrl) {
-    connectCloudRelayViaIpc(rt);
+    connectCloudRelayViaIpc(rt).catch((err) => {
+      supportDiag(`Cloud relay connect failed: ${err?.message || err}`, 'warn');
+      if (!localRelayIpcReady) scheduleRelayReconnect();
+    });
   } else {
     ipcRenderer.invoke('swiftsync:cloud-relay-disconnect').catch(() => {});
   }
@@ -6850,6 +6873,14 @@ setTimeout(() => onStartupConfigReady(), 800);
 ipcRenderer.on('swiftsync:local-relay', (_evt, ev) => handleLocalRelayEvent(ev));
 refreshSetupChecklist();
 checkAppVersion().catch(() => {});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const msg = e?.reason?.message || String(e?.reason || 'unknown');
+  if (/websocket|relay|socket/i.test(msg)) {
+    supportDiag(`Unhandled relay error: ${msg}`, 'error');
+    if (!isRelayOpen()) scheduleRelayReconnect();
+  }
+});
 
 chatConnectBtn?.addEventListener('click', () => {
   handleChatConnect().catch(console.error);

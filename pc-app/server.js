@@ -794,6 +794,7 @@ function attachRelayHandlers(wss, stores, port, relayBridge) {
         }
 
         if (data.from === 'pc') {
+          if (data.type === 'relayPing') return;
           cachePcObsBroadcast(msg, data);
           relayPcToMobile(msg);
           if (

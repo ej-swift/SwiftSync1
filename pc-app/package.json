@@ -1,6 +1,6 @@
 {
   "name": "swiftsync",
-  "version": "1.0.34",
+  "version": "1.0.35",
   "description": "SwiftSync PC controller for OBS",
   "main": "main.js",
   "author": "SwiftSync",
