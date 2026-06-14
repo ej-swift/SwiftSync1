@@ -1,6 +1,6 @@
 # SwiftSync releases
 
-Current version: **1.0.34**
+Current version: **1.0.35**
 
 ## Windows (from any PC)
 
